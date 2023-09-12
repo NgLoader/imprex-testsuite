@@ -23,7 +23,7 @@ import com.velocitypowered.api.proxy.ProxyServer;
 		name = "Imprex Test suite",
 		version = "1.0.0",
 		authors = { "NgLoader" })
-public class Testsuite {
+public class TestsuitePlugin {
 
 	@Inject
 	private ProxyServer proxy;
@@ -37,7 +37,7 @@ public class Testsuite {
 	private PteroServerCache serverCache;
 
 	@Inject
-	public Testsuite(@DataDirectory Path dataFolder) {
+	public TestsuitePlugin(@DataDirectory Path dataFolder) {
 		this.config = new TestsuiteConfig(dataFolder);
 	}
 

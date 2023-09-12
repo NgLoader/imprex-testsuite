@@ -3,9 +3,13 @@
 
 	<groupId>dev.imprex</groupId>
 	<artifactId>imprex-testsuite</artifactId>
-	<version>0.0.1</version>
+	<version>${revision}</version>
+
+	<packaging>pom</packaging>
 
 	<properties>
+		<revision>0.0.1</revision>
+		
 		<maven.compiler.source>17</maven.compiler.source>
 		<maven.compiler.target>17</maven.compiler.target>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -20,28 +24,41 @@
 			<id>mattmalec-repo</id>
 			<url>https://repo.mattmalec.com/repository/releases</url>
 		</repository>
+		<repository>
+			<id>minecraft-libraries</id>
+			<name>Minecraft Libraries</name>
+			<url>https://libraries.minecraft.net</url>
+		</repository>
 	</repositories>
 
-	<dependencies>
-		<dependency>
-			<groupId>org.slf4j</groupId>
-			<artifactId>slf4j-api</artifactId>
-			<version>1.7.30</version>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>com.velocitypowered</groupId>
-			<artifactId>velocity-api</artifactId>
-			<version>3.2.0-SNAPSHOT</version>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>com.mattmalec</groupId>
-			<artifactId>Pterodactyl4J</artifactId>
-			<version>2.BETA_140</version>
-			<scope>compile</scope>
-		</dependency>
-	</dependencies>
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>org.slf4j</groupId>
+				<artifactId>slf4j-api</artifactId>
+				<version>1.7.30</version>
+				<scope>provided</scope>
+			</dependency>
+			<dependency>
+				<groupId>com.velocitypowered</groupId>
+				<artifactId>velocity-api</artifactId>
+				<version>3.2.0-SNAPSHOT</version>
+				<scope>provided</scope>
+			</dependency>
+			<dependency>
+				<groupId>com.mattmalec</groupId>
+				<artifactId>Pterodactyl4J</artifactId>
+				<version>2.BETA_140</version>
+				<scope>provided</scope>
+			</dependency>
+			<dependency>
+				<groupId>com.mojang</groupId>
+				<artifactId>brigadier</artifactId>
+				<version>1.0.18</version>
+				<scope>provided</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
 
 	<build>
 		<plugins>
@@ -49,14 +66,6 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-shade-plugin</artifactId>
 				<version>3.3.1-SNAPSHOT</version>
-				<configuration>
-					<relocations>
-						<relocation>
-							<pattern>org.bstats</pattern>
-							<shadedPattern>net.imprex.orebfuscator.metrics</shadedPattern>
-						</relocation>
-					</relocations>
-				</configuration>
 				<executions>
 					<execution>
 						<phase>package</phase>
@@ -68,4 +77,10 @@
 			</plugin>
 		</plugins>
 	</build>
+
+	<modules>
+		<module>imprex-testsuite-common</module>
+		<module>imprex-testsuite-velocity</module>
+		<module>imprex-testsuite-spigot</module>
+	</modules>
 </project>

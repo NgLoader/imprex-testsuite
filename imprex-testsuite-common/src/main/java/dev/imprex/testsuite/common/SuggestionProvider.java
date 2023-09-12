@@ -1,4 +1,4 @@
-package dev.imprex.testsuite;
+package dev.imprex.testsuite.common;
 
 import java.util.Arrays;
 import java.util.Collection;

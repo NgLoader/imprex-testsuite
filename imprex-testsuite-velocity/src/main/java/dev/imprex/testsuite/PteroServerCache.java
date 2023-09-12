@@ -20,7 +20,7 @@ public class PteroServerCache implements Runnable {
 	private List<ClientServer> serverCache = new ArrayList<>();
 	private ReadWriteLock lock = new ReentrantReadWriteLock();
 
-	public PteroServerCache(Testsuite plugin) {
+	public PteroServerCache(TestsuitePlugin plugin) {
 		this.pteroClient = plugin.getPteroClient();
 
 		this.scheduler = plugin.getProxy().getScheduler().buildTask(plugin, this)

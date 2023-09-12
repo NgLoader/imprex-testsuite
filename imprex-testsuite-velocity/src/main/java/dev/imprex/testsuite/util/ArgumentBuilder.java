@@ -1,4 +1,4 @@
-package dev.imprex.testsuite;
+package dev.imprex.testsuite.util;
 
 import com.mojang.brigadier.arguments.ArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
