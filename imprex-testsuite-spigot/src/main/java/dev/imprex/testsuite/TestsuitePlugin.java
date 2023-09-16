@@ -1,5 +1,14 @@
 package dev.imprex.testsuite;
 
-public class TestsuitePlugin {
+import org.bukkit.plugin.java.JavaPlugin;
 
+public class TestsuitePlugin extends JavaPlugin {
+
+	@Override
+	public void onEnable() {
+	}
+
+	@Override
+	public void onDisable() {
+	}
 }

@@ -8,4 +8,11 @@
 	</parent>
 
 	<artifactId>imprex-testsuite-spigot</artifactId>
+
+	<dependencies>
+		<dependency>
+			<groupId>org.bukkit</groupId>
+			<artifactId>bukkit</artifactId>
+		</dependency>
+	</dependencies>
 </project>

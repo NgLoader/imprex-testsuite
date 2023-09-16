@@ -14,6 +14,7 @@
 			<groupId>dev.imprex</groupId>
 			<artifactId>imprex-testsuite-common</artifactId>
 			<version>${revision}</version>
+			<scope>compile</scope>
 		</dependency>
 		<dependency>
 			<groupId>com.velocitypowered</groupId>

@@ -2,6 +2,7 @@ package dev.imprex.testsuite;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 
@@ -18,6 +19,9 @@ import com.velocitypowered.api.plugin.Plugin;
 import com.velocitypowered.api.plugin.annotation.DataDirectory;
 import com.velocitypowered.api.proxy.ProxyServer;
 
+import dev.imprex.testsuite.common.ServerVersionCache;
+import dev.imprex.testsuite.server.PteroServerCache;
+
 @Plugin(
 		id = "imprex-testsuite",
 		name = "Imprex Test suite",
@@ -30,15 +34,19 @@ public class TestsuitePlugin {
 
 	@Inject Logger logger;
 
+	private Path dataFolder;
 	private TestsuiteConfig config;
 
 	private PteroApplication pteroApplication;
 	private PteroClient pteroClient;
+
 	private PteroServerCache serverCache;
+	private ServerVersionCache versionCache;
 
 	@Inject
 	public TestsuitePlugin(@DataDirectory Path dataFolder) {
-		this.config = new TestsuiteConfig(dataFolder);
+		this.dataFolder = dataFolder;
+		this.config = new TestsuiteConfig(this.dataFolder);
 	}
 
 	@Subscribe
@@ -54,6 +62,12 @@ public class TestsuitePlugin {
 			logger.warn("Invalid config!");
 			return;
 		}
+
+		this.versionCache = new ServerVersionCache(dataFolder.resolve("version_cache.json"));
+		this.proxy.getScheduler().buildTask(this, this.versionCache)
+				.repeat(1, TimeUnit.MINUTES)
+				.clearDelay()
+				.schedule();
 
 		this.pteroApplication = PteroBuilder.createApplication(this.config.getUrl(), this.config.getApplicationToken());
 		this.pteroClient = PteroBuilder.createClient(this.config.getUrl(), this.config.getClientToken());
@@ -79,6 +93,10 @@ public class TestsuitePlugin {
 
 	public PteroServerCache getServerCache() {
 		return this.serverCache;
+	}
+
+	public ServerVersionCache getVersionCache() {
+		return this.versionCache;
 	}
 
 	public TestsuiteConfig getConfig() {
