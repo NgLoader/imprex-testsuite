@@ -54,42 +54,34 @@ public class AllocationAssignment {
 						return;
 					}
 
-					this.createAllocation(node, portRange).whenComplete((allocation2, error3) -> {
-						if (error3 != null) {
-							future.completeExceptionally(error3);
-						} else {
-							future.complete(allocation2);
-						}
-					});
+					this.createAllocation(node, portRange)
+						.thenCompose(__ -> this.receiveAllocations(node))
+						.thenApply(allocations -> this.selectAllocation(portRange, allocations))
+						.whenComplete((allocation2, error3) -> {
+							if (error3 != null) {
+								future.completeExceptionally(error3);
+							} else {
+								future.complete(allocation2);
+							}
+						});
 				});
 		});
 
 		return future;
 	}
 
-	private CompletableFuture<ApplicationAllocation> createAllocation(Node node, PortRange portRange) {
+	private CompletableFuture<Void> createAllocation(Node node, PortRange portRange) {
 		int port = portRange.parkFreePort();
 		if (port == -1) {
 			return CompletableFuture.failedFuture(new IndexOutOfBoundsException("Port range is full"));
 		}
 
-		CompletableFuture<ApplicationAllocation> future = new CompletableFuture<>();
+		CompletableFuture<Void> future = new CompletableFuture<>();
 		node.getAllocationManager().createAllocation()
 			.setIP(this.ipv4)
 			.setAlias(this.aliasIdentifier)
 			.setPorts(Integer.toString(port))
-			.executeAsync(__ -> {
-				this.receiveAllocations(node)
-					.thenApply(allocations -> this.selectAllocation(portRange, allocations))
-					.whenComplete((allocation, error) -> {
-						if (error != null) {
-							future.completeExceptionally(error);
-							return;
-						}
-
-						future.complete(allocation);
-					});
-			}, future::completeExceptionally);
+			.executeAsync(future::complete, future::completeExceptionally);
 
 		return future;
 	}

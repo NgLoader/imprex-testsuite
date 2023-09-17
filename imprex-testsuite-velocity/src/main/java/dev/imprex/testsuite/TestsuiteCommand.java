@@ -6,7 +6,6 @@ import static dev.imprex.testsuite.util.ArgumentBuilder.literal;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
-import com.mattmalec.pterodactyl4j.client.entities.ClientServer;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
@@ -22,20 +21,23 @@ import dev.imprex.testsuite.common.ServerType;
 import dev.imprex.testsuite.common.ServerVersion;
 import dev.imprex.testsuite.common.ServerVersionCache;
 import dev.imprex.testsuite.common.SuggestionProvider;
+import dev.imprex.testsuite.server.ServerInstance;
 import dev.imprex.testsuite.server.ServerManager;
+import dev.imprex.testsuite.template.ServerTemplate;
+import dev.imprex.testsuite.template.ServerTemplateList;
 import net.kyori.adventure.text.Component;
 
 public class TestsuiteCommand {
 
 	private final ProxyServer proxy;
-	private final PteroServerCache serverCache;
 	private final ServerVersionCache versionCache;
+	private final ServerTemplateList templateList;
 	private final ServerManager serverManager;
 
 	public TestsuiteCommand(TestsuitePlugin plugin) {
 		this.proxy = plugin.getProxy();
-		this.serverCache = plugin.getServerCache();
 		this.versionCache = plugin.getVersionCache();
+		this.templateList = plugin.getTemplateList();
 		this.serverManager = plugin.getServerManager();
 	}
 
@@ -45,7 +47,7 @@ public class TestsuiteCommand {
 				.then(
 						literal("create").then(
 								argument("name", StringArgumentType.word())
-								.suggests(this::suggestServers)
+								.suggests(this::suggestTemplates)
 								.then(
 										argument("type", StringArgumentType.word())
 										.suggests((future, builder) -> SuggestionProvider.suggest(builder, ServerType.TYPES))
@@ -76,6 +78,15 @@ public class TestsuiteCommand {
 							return 0;
 						}))
 				.then(
+						literal("setup").then(
+								argument("name", StringArgumentType.greedyString())
+								.suggests(this::suggestServers)
+								.executes(this::setupServer))
+						.executes(context -> {
+							// SYNTAX
+							return 0;
+						}))
+				.then(
 						literal("connect").then(
 								argument("name", StringArgumentType.greedyString())
 								.suggests(this::suggestServerInfos)
@@ -98,8 +109,14 @@ public class TestsuiteCommand {
 	}
 
 	public CompletableFuture<Suggestions> suggestServers(CommandContext<CommandSource> context, SuggestionsBuilder builder) {
-		return SuggestionProvider.suggest(builder, this.serverCache.getServers().stream()
+		return SuggestionProvider.suggest(builder, this.serverManager.getServers().stream()
 				.map(server -> server.getName())
+				.toList());
+	}
+
+	public CompletableFuture<Suggestions> suggestTemplates(CommandContext<CommandSource> context, SuggestionsBuilder builder) {
+		return SuggestionProvider.suggest(builder, this.templateList.getTemplates().stream()
+				.map(template -> template.getName())
 				.toList());
 	}
 
@@ -120,34 +137,58 @@ public class TestsuiteCommand {
 
 	public int startServer(CommandContext<CommandSource> context) {
 		String serverName = context.getArgument("name", String.class);
-		ClientServer server = serverCache.getServer(serverName);
+		ServerInstance server = this.serverManager.getServer(serverName);
 		if (server == null) {
 			context.getSource().sendMessage(Component.text("No server found"));
 			return Command.SINGLE_SUCCESS;
 		}
 
 		context.getSource().sendMessage(Component.text("Try starting -> " + server.getName()));
-		server.start().executeAsync(__ -> {
-			context.getSource().sendMessage(Component.text("Starting -> " + server.getName()));
-		}, __ -> {
-			context.getSource().sendMessage(Component.text("Unable to start server -> " + server.getName()));
+		server.start().whenComplete((__, error) -> {
+			if (error != null) {
+				context.getSource().sendMessage(Component.text("Unable to start server -> " + server.getName()));
+			} else {
+				context.getSource().sendMessage(Component.text("Starting -> " + server.getName()));
+			}
 		});
 		return Command.SINGLE_SUCCESS;
 	}
 
 	public int stopServer(CommandContext<CommandSource> context) {
 		String serverName = context.getArgument("name", String.class);
-		ClientServer server = serverCache.getServer(serverName);
+		ServerInstance server = this.serverManager.getServer(serverName);
 		if (server == null) {
 			context.getSource().sendMessage(Component.text("No server found"));
 			return Command.SINGLE_SUCCESS;
 		}
 
 		context.getSource().sendMessage(Component.text("Try stopping -> " + server.getName()));
-		server.stop().executeAsync(__ -> {
-			context.getSource().sendMessage(Component.text("Stopping -> " + server.getName()));
-		}, __ -> {
-			context.getSource().sendMessage(Component.text("Unable to stop server -> " + server.getName()));
+		server.stop().whenComplete((__, error) -> {
+			if (error != null) {
+				context.getSource().sendMessage(Component.text("Unable to stop server -> " + server.getName()));
+			} else {
+				context.getSource().sendMessage(Component.text("Stopping -> " + server.getName()));
+			}
+		});
+		return Command.SINGLE_SUCCESS;
+	}
+
+	public int setupServer(CommandContext<CommandSource> context) {
+		String serverName = context.getArgument("name", String.class);
+		ServerInstance server = this.serverManager.getServer(serverName);
+		if (server == null) {
+			context.getSource().sendMessage(Component.text("No server found"));
+			return Command.SINGLE_SUCCESS;
+		}
+
+		context.getSource().sendMessage(Component.text("Try setup -> " + server.getName()));
+		server.setupServer().whenComplete((__, error) -> {
+			if (error != null) {
+				error.printStackTrace();
+				context.getSource().sendMessage(Component.text("Unable to setup server -> " + server.getName()));
+			} else {
+				context.getSource().sendMessage(Component.text("Setup successful -> " + server.getName()));
+			}
 		});
 		return Command.SINGLE_SUCCESS;
 	}
@@ -168,6 +209,8 @@ public class TestsuiteCommand {
 	public int createServer(CommandContext<CommandSource> context) {
 		String name = context.getArgument("name", String.class);
 
+		ServerTemplate template = this.templateList.getTemplate(name);
+
 		ServerType serverType = ServerType.fromName(context.getArgument("type", String.class));
 		if (serverType == null) {
 			context.getSource().sendMessage(Component.text("Invalid server type"));
@@ -179,16 +222,28 @@ public class TestsuiteCommand {
 			context.getSource().sendMessage(Component.text("Invalid version"));
 		}
 
-		context.getSource().sendMessage(Component.text("Creating server..."));
-		this.serverManager.create(name, serverType, version).whenComplete((__, error) -> {
-			if (error != null) {
-				error.printStackTrace();
-				context.getSource().sendMessage(Component.text("Created failed! " + error.getMessage()));
-				return;
-			}
+		context.getSource().sendMessage(Component.text("Creating server " + (template != null ? "template " + template.getName() : name) + "..."));
+		if (this.templateList != null) {
+			this.serverManager.create(template, serverType, version).whenComplete((__, error) -> {
+				if (error != null) {
+					error.printStackTrace();
+					context.getSource().sendMessage(Component.text("Created failed! " + error.getMessage()));
+					return;
+				}
 
-			context.getSource().sendMessage(Component.text("Created success"));
-		});
+				context.getSource().sendMessage(Component.text("Created success"));
+			});
+		} else {
+			this.serverManager.create(name, serverType, version).whenComplete((__, error) -> {
+				if (error != null) {
+					error.printStackTrace();
+					context.getSource().sendMessage(Component.text("Created failed! " + error.getMessage()));
+					return;
+				}
+
+				context.getSource().sendMessage(Component.text("Created success"));
+			});
+		}
 		return Command.SINGLE_SUCCESS;
 	}
 }
