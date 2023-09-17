@@ -6,7 +6,6 @@ import static dev.imprex.testsuite.util.ArgumentBuilder.literal;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
-import com.mattmalec.pterodactyl4j.application.managers.ServerCreationAction;
 import com.mattmalec.pterodactyl4j.client.entities.ClientServer;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -23,7 +22,7 @@ import dev.imprex.testsuite.common.ServerType;
 import dev.imprex.testsuite.common.ServerVersion;
 import dev.imprex.testsuite.common.ServerVersionCache;
 import dev.imprex.testsuite.common.SuggestionProvider;
-import dev.imprex.testsuite.server.PteroServerCache;
+import dev.imprex.testsuite.server.ServerManager;
 import net.kyori.adventure.text.Component;
 
 public class TestsuiteCommand {
@@ -31,11 +30,13 @@ public class TestsuiteCommand {
 	private final ProxyServer proxy;
 	private final PteroServerCache serverCache;
 	private final ServerVersionCache versionCache;
+	private final ServerManager serverManager;
 
 	public TestsuiteCommand(TestsuitePlugin plugin) {
 		this.proxy = plugin.getProxy();
 		this.serverCache = plugin.getServerCache();
 		this.versionCache = plugin.getVersionCache();
+		this.serverManager = plugin.getServerManager();
 	}
 
 	public LiteralArgumentBuilder<CommandSource> create() {
@@ -178,16 +179,15 @@ public class TestsuiteCommand {
 			context.getSource().sendMessage(Component.text("Invalid version"));
 		}
 
-		ServerCreationAction action = this.serverCache.createServer(name, serverType, version);
-		if (action == null) {
-			context.getSource().sendMessage(Component.text("nope"));
-			return Command.SINGLE_SUCCESS;
-		}
+		context.getSource().sendMessage(Component.text("Creating server..."));
+		this.serverManager.create(name, serverType, version).whenComplete((__, error) -> {
+			if (error != null) {
+				error.printStackTrace();
+				context.getSource().sendMessage(Component.text("Created failed! " + error.getMessage()));
+				return;
+			}
 
-		action.executeAsync(__ -> {
 			context.getSource().sendMessage(Component.text("Created success"));
-		}, __ -> {
-			context.getSource().sendMessage(Component.text("Created failed"));
 		});
 		return Command.SINGLE_SUCCESS;
 	}

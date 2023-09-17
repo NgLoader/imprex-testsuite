@@ -1,6 +1,5 @@
 package dev.imprex.testsuite;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
@@ -20,7 +19,9 @@ import com.velocitypowered.api.plugin.annotation.DataDirectory;
 import com.velocitypowered.api.proxy.ProxyServer;
 
 import dev.imprex.testsuite.common.ServerVersionCache;
-import dev.imprex.testsuite.server.PteroServerCache;
+import dev.imprex.testsuite.config.PterodactylConfig;
+import dev.imprex.testsuite.config.TestsuiteConfig;
+import dev.imprex.testsuite.server.ServerManager;
 
 @Plugin(
 		id = "imprex-testsuite",
@@ -40,28 +41,27 @@ public class TestsuitePlugin {
 	private PteroApplication pteroApplication;
 	private PteroClient pteroClient;
 
+	private ServerManager serverManager;
 	private PteroServerCache serverCache;
 	private ServerVersionCache versionCache;
 
 	@Inject
 	public TestsuitePlugin(@DataDirectory Path dataFolder) {
 		this.dataFolder = dataFolder;
-		this.config = new TestsuiteConfig(this.dataFolder);
 	}
 
 	@Subscribe
 	public void onProxyInitialize(ProxyInitializeEvent event) {
-		try {
-			this.config.load();
-		} catch (IOException e) {
-			e.printStackTrace();
+		this.config = new TestsuiteConfig(this.dataFolder.resolve("config.json"));
+		PterodactylConfig tylConfig = this.config.getPterodactylConfig();
+
+		if (!tylConfig.valid()) {
+			logger.info("Invalid config!");
 			return;
 		}
 
-		if (!this.config.validate()) {
-			logger.warn("Invalid config!");
-			return;
-		}
+		this.pteroApplication = PteroBuilder.createApplication(tylConfig.url(), tylConfig.applicationToken());
+		this.pteroClient = PteroBuilder.createClient(tylConfig.url(), tylConfig.clientToken());
 
 		this.versionCache = new ServerVersionCache(dataFolder.resolve("version_cache.json"));
 		this.proxy.getScheduler().buildTask(this, this.versionCache)
@@ -69,9 +69,8 @@ public class TestsuitePlugin {
 				.clearDelay()
 				.schedule();
 
-		this.pteroApplication = PteroBuilder.createApplication(this.config.getUrl(), this.config.getApplicationToken());
-		this.pteroClient = PteroBuilder.createClient(this.config.getUrl(), this.config.getClientToken());
-		this.serverCache = new PteroServerCache(this);
+		this.serverManager = new ServerManager(this);
+		this.serverCache = new PteroServerCache(this); // old
 
 		CommandManager commandManager = this.proxy.getCommandManager();
 		CommandMeta commandMeta = commandManager.metaBuilder("testsuite")
@@ -89,6 +88,10 @@ public class TestsuitePlugin {
 
 	public PteroClient getPteroClient() {
 		return this.pteroClient;
+	}
+
+	public ServerManager getServerManager() {
+		return this.serverManager;
 	}
 
 	public PteroServerCache getServerCache() {

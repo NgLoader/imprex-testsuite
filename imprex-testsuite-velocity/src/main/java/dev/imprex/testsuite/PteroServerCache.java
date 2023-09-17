@@ -1,4 +1,4 @@
-package dev.imprex.testsuite.server;
+package dev.imprex.testsuite;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -26,7 +26,6 @@ import com.velocitypowered.api.proxy.server.RegisteredServer;
 import com.velocitypowered.api.proxy.server.ServerInfo;
 import com.velocitypowered.api.scheduler.Scheduler.TaskBuilder;
 
-import dev.imprex.testsuite.TestsuitePlugin;
 import dev.imprex.testsuite.common.ServerType;
 
 public class PteroServerCache implements Runnable {
