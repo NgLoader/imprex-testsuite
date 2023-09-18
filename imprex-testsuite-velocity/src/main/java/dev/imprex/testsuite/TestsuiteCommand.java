@@ -223,7 +223,7 @@ public class TestsuiteCommand {
 		}
 
 		context.getSource().sendMessage(Component.text("Creating server " + (template != null ? "template " + template.getName() : name) + "..."));
-		if (this.templateList != null) {
+		if (template != null) {
 			this.serverManager.create(template, serverType, version).whenComplete((__, error) -> {
 				if (error != null) {
 					error.printStackTrace();

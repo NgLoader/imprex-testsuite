@@ -1,34 +1,36 @@
 package dev.imprex.testsuite.server;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.net.InetSocketAddress;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.mattmalec.pterodactyl4j.UtilizationState;
 import com.mattmalec.pterodactyl4j.client.entities.ClientServer;
-import com.mattmalec.pterodactyl4j.client.entities.Directory;
-import com.mattmalec.pterodactyl4j.client.managers.UploadFileAction;
+import com.mattmalec.pterodactyl4j.client.entities.Utilization;
 import com.mattmalec.pterodactyl4j.client.managers.WebSocketManager;
 import com.mattmalec.pterodactyl4j.entities.Allocation;
 import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.proxy.server.ServerInfo;
 
 import dev.imprex.testsuite.TestsuiteLogger;
+import dev.imprex.testsuite.common.override.OverrideHandler;
 import dev.imprex.testsuite.template.ServerTemplate;
 import dev.imprex.testsuite.template.ServerTemplateList;
 import dev.imprex.testsuite.util.PteroUtil;
+import dev.imprex.testsuite.util.PteroUtilization;
 
 public class ServerInstance {
 
+	private static final int STATS_UPDATE_TIME = 15;
+
 	private final ServerManager manager;
 	private final ClientServer server;
+	private final OverrideHandler overrideHandler;
 
 	private final ProxyServer proxyServer;
 	private final ServerInfo serverInfo;
@@ -36,11 +38,13 @@ public class ServerInstance {
 	private WebSocketManager webSocketManager;
 
 	private ServerTemplate template;
-	private AtomicReference<UtilizationState> state = new AtomicReference<>(UtilizationState.OFFLINE);
+	private AtomicReference<Utilization> stats = new AtomicReference<>(new PteroUtilization());
+	private AtomicReference<UtilizationState> status = new AtomicReference<>(UtilizationState.OFFLINE);
 
 	public ServerInstance(ServerManager manager, ClientServer server) {
 		this.manager = manager;
 		this.server = server;
+		this.overrideHandler = manager.getPlugin().getOverrideHandler();
 		this.proxyServer = manager.getPlugin().getProxy();
 
 		ServerTemplateList templateList = this.manager.getPlugin().getTemplateList();
@@ -49,10 +53,34 @@ public class ServerInstance {
 		Allocation allocation = this.server.getPrimaryAllocation();
 		this.serverInfo = new ServerInfo(this.getName(), new InetSocketAddress(allocation.getIP(), allocation.getPortInt()));
 		this.proxyServer.registerServer(this.serverInfo);
+
+		this.scheduleStatsUpdate(STATS_UPDATE_TIME);
 	}
 
-	void changeState(UtilizationState state) {
-		this.state.getAndSet(state);
+	private void scheduleStatsUpdate(int delay) {
+		this.server.retrieveUtilization().delay(delay, TimeUnit.SECONDS).executeAsync(
+			stats -> {
+				this.updateStats(stats);
+				this.scheduleStatsUpdate(STATS_UPDATE_TIME);
+			},
+			error -> {
+				TestsuiteLogger.error(error, "Unable to fetch stats from server {0} waiting {0} seconds.",
+						this.getName(),
+						STATS_UPDATE_TIME * 10);
+				this.scheduleStatsUpdate(STATS_UPDATE_TIME * 10);
+			});
+	}
+
+	void updateStats(Utilization stats) {
+		this.stats.getAndSet(stats);
+		this.updateStatus(stats.getState());
+	}
+
+	void updateStatus(UtilizationState status) {
+		if (this.status.get() != status) {
+			this.status.getAndSet(status);
+			TestsuiteLogger.info("[{0}] State: {1}", this.getName(), status.name());
+		}
 	}
 
 	public CompletableFuture<Void> setupServer() {
@@ -63,90 +91,41 @@ public class ServerInstance {
 		CompletableFuture<Void> future = new CompletableFuture<>();
 
 		List<Path> fileList = new CopyOnWriteArrayList<>(this.template.getFiles());
-		
-		this.server.retrieveDirectory().executeAsync(directoryRoot -> {
-			this.updateDirectory(fileList, directoryRoot).whenComplete((__, error) -> {
-				if (error != null) {
-					future.completeExceptionally(error);
-				} else {
-					future.complete(null);
-				}
-				System.gc(); // TODO test phase
-			});
-		}, error -> {
-			error.printStackTrace();
-		});
-
-		return future;
-	}
-
-	private CompletableFuture<Void> updateDirectory(List<Path> fileList, Directory directoryRoot) {
 		int pathPrefix = this.template.getPath().toString().length();
 
-		String directoryPath = directoryRoot.getPath();
-		if (directoryPath.startsWith("/")) {
-			directoryPath = directoryPath.substring(1);
-		}
+		Optional<Path> overridePath = fileList.stream()
+				.filter(file -> file.toString().substring(pathPrefix).contains("/override.yml"))
+				.findFirst();
 
-		UploadFileAction uploadFileAction = directoryRoot.upload();
-		boolean needUpload = false;
-
-		List<CompletableFuture<Void>> futureList = new ArrayList<>();
-		for (Path file : fileList) {
-			String testPath = file.getParent().toString().substring(pathPrefix);
-			String tylPath = testPath.startsWith("/") ? testPath.substring(1) : testPath;
-
-			if (!directoryPath.equals(tylPath)) {
-				continue;
-			}
-			fileList.remove(file);
-
-			CompletableFuture<Void> future = new CompletableFuture<>();
-			futureList.add(future);
-
-			if (Files.isDirectory(file)) {
-				String direcoryName = file.getFileName().toString();
-				String fullTylPath = directoryPath.length() == 0 ? direcoryName : (directoryPath + "/" + direcoryName);
-				directoryRoot.createFolder(direcoryName).executeAsync(__ -> {
-					this.server.retrieveDirectory(fullTylPath).executeAsync(directory -> {
-						this.updateDirectory(fileList, directory).whenComplete((___, error) -> {
-							if (error != null) {
-								future.completeExceptionally(error);
-							} else {
-								future.complete(null);
-							}
-						});
-					}, error -> {
-						future.completeExceptionally(error);
-					});
-				}, error -> {
-					future.completeExceptionally(error);
-				});
-			} else {
-				try {
-					InputStream inputStream = Files.newInputStream(file);
-					uploadFileAction.addFile(inputStream, file.getFileName().toString());
-					needUpload = true;
-					future.complete(null);
-				} catch (IOException e) {
-					future.completeExceptionally(e);
-				}
-			}
-		}
-
-		if (needUpload) {
-			CompletableFuture<Void> future = new CompletableFuture<>();
-			uploadFileAction.executeAsync(__ -> {
-				uploadFileAction.clearFiles(); // we need to clear all files because the input stream will not close after execution !?
-				future.complete(null);
-			},
-			error -> {
+		PteroUtil.updateDirectory(this.server, pathPrefix, fileList).whenComplete((__, error) -> {
+			if (error != null) {
 				future.completeExceptionally(error);
-			});
-			futureList.add(future);
+			} else {
+				future.complete(null);
+			}
+			System.gc(); // TODO test phase
+		});
+
+		if (overridePath.isPresent()) {
+//			Map<Path, OverrideConfig> overrides = this.overrideHandler.loadOverride(overridePath.get());
+//			for (Entry<Path, OverrideConfig> entry : overrides.entrySet()) {
+//				Path path = entry.getKey();
+//				OverrideConfig config = entry.getValue();
+//
+//				if (config.overrideAfterFirstStart()) {
+//					continue;
+//				}
+//
+//				Path parentPath = path.getParent();
+//				this.server.retrieveDirectory(parentPath.toString()).executeAsync(directory -> {
+//					
+//				}, error -> {
+//					
+//				});
+//			}
 		}
 
-		return CompletableFuture.allOf(futureList.toArray(CompletableFuture[]::new));
+		return future;
 	}
 
 	public void subscribe() {
@@ -184,6 +163,10 @@ public class ServerInstance {
 		return PteroUtil.execute(this.server.kill());
 	}
 
+	public CompletableFuture<Void> reinstall() {
+		return PteroUtil.execute(this.server.getManager().reinstall());
+	}
+
 	public CompletableFuture<Void> delete() {
 		return this.manager.deleteInstance(this.getIdentifier());
 	}
@@ -194,8 +177,12 @@ public class ServerInstance {
 		this.proxyServer.unregisterServer(this.serverInfo);
 	}
 
-	public UtilizationState getState() {
-		return this.state.get();
+	public Utilization getStats() {
+		return this.stats.get();
+	}
+
+	public UtilizationState getStatus() {
+		return this.status.get();
 	}
 
 	public boolean hasTemplate() {

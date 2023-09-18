@@ -20,6 +20,7 @@ import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.scheduler.Scheduler;
 
 import dev.imprex.testsuite.common.ServerVersionCache;
+import dev.imprex.testsuite.common.override.OverrideHandler;
 import dev.imprex.testsuite.config.PterodactylConfig;
 import dev.imprex.testsuite.config.TestsuiteConfig;
 import dev.imprex.testsuite.server.ServerManager;
@@ -40,6 +41,8 @@ public class TestsuitePlugin {
 
 	private PteroApplication pteroApplication;
 	private PteroClient pteroClient;
+
+	private OverrideHandler overrideHandler;
 
 	private ServerVersionCache versionCache;
 	private ServerTemplateList templateList;
@@ -63,6 +66,8 @@ public class TestsuitePlugin {
 
 		this.pteroApplication = PteroBuilder.createApplication(tylConfig.url(), tylConfig.applicationToken());
 		this.pteroClient = PteroBuilder.createClient(tylConfig.url(), tylConfig.clientToken());
+
+		this.overrideHandler = new OverrideHandler();
 
 		this.versionCache = new ServerVersionCache(dataFolder.resolve("version_cache.json"));
 		this.templateList = new ServerTemplateList(this, this.dataFolder.resolve("template"));
@@ -94,6 +99,10 @@ public class TestsuitePlugin {
 
 	public PteroClient getPteroClient() {
 		return this.pteroClient;
+	}
+
+	public OverrideHandler getOverrideHandler() {
+		return this.overrideHandler;
 	}
 
 	public ServerVersionCache getVersionCache() {

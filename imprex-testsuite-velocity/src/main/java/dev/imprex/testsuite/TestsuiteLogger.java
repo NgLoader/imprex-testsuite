@@ -13,15 +13,15 @@ public class TestsuiteLogger {
 		logger = loggerInstance;
 	}
 
-	public static void info(String message, String... args) {
+	public static void info(String message, Object... args) {
 		logger.info(formatMessage(message, args));
 	}
 
-	public static void error(Throwable throwable, String message, String... args) {
+	public static void error(Throwable throwable, String message, Object... args) {
 		logger.error(formatMessage(message, args), throwable);
 	}
 
-	private static String formatMessage(String message, String... args) {
+	private static String formatMessage(String message, Object... args) {
 		char[] array = message.toCharArray();
 
 		StringBuilder builder = new StringBuilder();
@@ -35,7 +35,7 @@ public class TestsuiteLogger {
 					i += 2;
 
 					if (args.length > index) {
-						builder.append(args[index]);
+						builder.append(args[index].toString());
 					}
 				} catch (NumberFormatException e) {
 				}

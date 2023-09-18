@@ -131,7 +131,8 @@ public class AllocationAssignment {
 	}
 
 	public boolean isAllocation(ApplicationAllocation allocation) {
-		return allocation.getAlias().equalsIgnoreCase(this.aliasIdentifier) &&
+		return allocation.getAlias() != null &&
+				allocation.getAlias().equalsIgnoreCase(this.aliasIdentifier) &&
 				allocation.getIP().equals(this.ipv4) &&
 				allocation.getPortInt() >= this.minPort &&
 				allocation.getPortInt() <= this.maxPort;

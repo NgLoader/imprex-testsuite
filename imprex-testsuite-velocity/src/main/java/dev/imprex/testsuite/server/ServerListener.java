@@ -13,6 +13,6 @@ public class ServerListener extends ClientSocketListenerAdapter {
 
 	@Override
 	public void onStatusUpdate(StatusUpdateEvent event) {
-		this.instance.changeState(event.getState());
+		this.instance.updateStatus(event.getState());
 	}
 }

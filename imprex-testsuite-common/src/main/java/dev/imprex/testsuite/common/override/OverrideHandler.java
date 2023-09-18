@@ -2,6 +2,7 @@ package dev.imprex.testsuite.common.override;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.CharArrayWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -84,5 +85,34 @@ public class OverrideHandler {
 			e.printStackTrace();
 		}
 		return false;
+	}
+
+	/**
+	 * No stream will be closed after handling!
+	 * 
+	 * @param bufferedReader
+	 * @param overrideConfig
+	 * @return
+	 */
+	public boolean overrideFile(BufferedReader bufferedReader, BufferedWriter bufferedWriter, OverrideConfig overrideConfig) {
+		OverrideParser parser = this.parserRegistry.createParser(overrideConfig.parser());
+		if (parser == null) {
+			System.out.println("Unable to create parser \"" + overrideConfig.parser() + "\"");
+			return false;
+		}
+
+		if (!parser.load(bufferedReader)) {
+			System.out.println("Unable to load parser \"" + overrideConfig.parser() + "\"");
+			return false;
+		}
+
+		for (Entry<String, Object> entry : overrideConfig.find().entrySet()) {
+			String field = entry.getKey();
+			Object value = entry.getValue();
+			parser.setValue(field, value);
+		}
+
+		parser.save(bufferedWriter);
+		return true;
 	}
 }

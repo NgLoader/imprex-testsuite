@@ -64,11 +64,14 @@ public class ServerManager implements Runnable {
 				}
 
 				String identifier = server.getIdentifier();
-				if (this.serverInstances.get(identifier) == null) {
-					ServerInstance instance = new ServerInstance(this, server);
+				ServerInstance instance = this.serverInstances.get(identifier);
+				if (instance == null) {
+					instance = new ServerInstance(this, server);
 					this.serverInstances.put(identifier, instance);
 
 					TestsuiteLogger.info("Detected server instance \"{0}\"", instance.getName());
+				} else {
+					instance.updateStats(server.retrieveUtilization().execute());
 				}
 			}
 
