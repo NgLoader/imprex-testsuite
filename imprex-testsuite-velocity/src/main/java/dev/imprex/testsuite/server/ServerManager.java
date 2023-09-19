@@ -11,6 +11,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.mattmalec.pterodactyl4j.DataType;
 import com.mattmalec.pterodactyl4j.EnvironmentValue;
@@ -32,6 +34,9 @@ import dev.imprex.testsuite.util.PteroServerStatus;
 public class ServerManager implements Runnable {
 
 	private static final long UPDATE_TIME = TimeUnit.SECONDS.toMillis(30);
+
+	private static final Pattern PTERO_JAVA_IMAGES = Pattern.compile("[^|]+\\|(?<url>[^:]+:java_(?<version>\\d+))");
+	private static final Pattern MINECRAFT_VERSION = Pattern.compile("(?<major>\\d+)\\.(?<minor>\\d+)(?:\\.(?<patch>\\d+))?");
 
 	private final TestsuitePlugin plugin;
 	private final PteroApplication pteroApplication;
@@ -61,16 +66,14 @@ public class ServerManager implements Runnable {
 		}
 		this.lastUpdate.getAndSet(System.currentTimeMillis() + UPDATE_TIME);
 
-		this.pteroClient.retrieveServers().executeAsync((serverList) -> {
+		this.pteroClient.retrieveServers().all().executeAsync((serverList) -> {
 			for (ClientServer server : serverList) {
-				String identifier = server.getIdentifier();
-				ServerInstance instance = this.serverInstances.get(identifier);
-
-				if (server.isSuspended()) {
-					instance.updateServerStatus(PteroServerStatus.SUSPENDED);
-					instance.delete();
+				if (!ServerType.isValid(server.getEgg().getName())) {
 					continue;
 				}
+				
+				String identifier = server.getIdentifier();
+				ServerInstance instance = this.serverInstances.get(identifier);
 
 				if (instance == null) {
 					instance = new ServerInstance(this, server);
@@ -81,7 +84,10 @@ public class ServerManager implements Runnable {
 					instance.updateStats(server.retrieveUtilization().execute());
 				}
 
-				if (server.isInstalling()) {
+				if (server.isSuspended()) {
+					instance.updateServerStatus(PteroServerStatus.SUSPENDED);
+					continue;
+				} else if (server.isInstalling()) {
 					instance.updateServerStatus(PteroServerStatus.INSTALLING);
 					continue;
 				} else if (server.isTransferring()) {
@@ -197,6 +203,36 @@ public class ServerManager implements Runnable {
 			Map<String, EnvironmentValue<?>> environment = new HashMap<>();
 			environment.put("MINECRAFT_VERSION", EnvironmentValue.of(version));
 
+			Matcher versionMatcher = MINECRAFT_VERSION.matcher(version);
+			if (!versionMatcher.find()) {
+				future.completeExceptionally(new IllegalArgumentException("Minecraft version dosn't match pattern: <major>.<minor>.<patch>"));
+				return;
+			}
+
+			int minorVersion = Integer.parseInt(versionMatcher.group("minor"));
+			int requestedJavaVersion = minorVersion < 17 ? 11 : 17;
+
+
+			String dockerImage = null;
+			Matcher dockerMatcher = PTERO_JAVA_IMAGES.matcher(egg.getDockerImage());
+			while (dockerMatcher.find()) {
+				String url = dockerMatcher.group("url");
+				if (dockerImage == null) {
+					dockerImage = url;
+				}
+
+				int dockerVersion = Integer.parseInt(dockerMatcher.group("version"));
+				if (dockerVersion == requestedJavaVersion) {
+					dockerImage = url;
+					break;
+				}
+			}
+
+			if (dockerImage == null) {
+				future.completeExceptionally(new IllegalArgumentException("Unable to parse or find docker images."));
+				return;
+			}
+
 			this.pteroApplication.createServer()
 				.setName(name)
 				.setDescription(description)
@@ -206,6 +242,7 @@ public class ServerManager implements Runnable {
 				.setEnvironment(environment)
 				.setDisk(serverConfig.storage(), DataType.GB)
 				.setMemory(serverConfig.memory(), DataType.GB)
+				.setDockerImage(dockerImage)
 				.executeAsync((server) -> {
 					this.serverInstallation.add(server.getIdentifier());
 					this.lastUpdate.getAndSet(0);

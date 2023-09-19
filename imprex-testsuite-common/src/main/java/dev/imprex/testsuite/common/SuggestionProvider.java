@@ -12,9 +12,9 @@ import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 public class SuggestionProvider {
 
 	public static boolean match(String input, String message) {
-		char[] words = input.toCharArray();
-		for (int i = 0; i < words.length; i++) {
-			if (message.charAt(i) != words[i]) {
+		int length = Math.min(input.length(), message.length());
+		for (int i = 0; i < length; i++) {
+			if (message.charAt(i) != input.charAt(i)) {
 				return false;
 			}
 		}

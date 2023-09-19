@@ -25,6 +25,7 @@ import dev.imprex.testsuite.config.PterodactylConfig;
 import dev.imprex.testsuite.config.TestsuiteConfig;
 import dev.imprex.testsuite.server.ServerManager;
 import dev.imprex.testsuite.template.ServerTemplateList;
+import okhttp3.OkHttpClient;
 
 @Plugin(
 		id = "imprex-testsuite",
@@ -65,7 +66,11 @@ public class TestsuitePlugin {
 		}
 
 		this.pteroApplication = PteroBuilder.createApplication(tylConfig.url(), tylConfig.applicationToken());
-		this.pteroClient = PteroBuilder.createClient(tylConfig.url(), tylConfig.clientToken());
+		this.pteroClient = PteroBuilder.create(tylConfig.url(), tylConfig.clientToken())
+				.setWebSocketClient(new OkHttpClient.Builder()
+						.pingInterval(30, TimeUnit.SECONDS)
+						.build())
+				.buildClient();
 
 		this.overrideHandler = new OverrideHandler();
 

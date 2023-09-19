@@ -6,6 +6,7 @@ import static dev.imprex.testsuite.util.ArgumentBuilder.literal;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
+import com.mattmalec.pterodactyl4j.UtilizationState;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
@@ -50,7 +51,7 @@ public class TestsuiteCommand {
 								.suggests(this::suggestTemplates)
 								.then(
 										argument("type", StringArgumentType.word())
-										.suggests((future, builder) -> SuggestionProvider.suggest(builder, ServerType.TYPES))
+										.suggests((future, builder) -> SuggestionProvider.suggest(builder, ServerType.TYPE_NAMES))
 										.then(
 												argument("version", StringArgumentType.word())
 												.suggests(this::suggestVersions)
@@ -71,7 +72,7 @@ public class TestsuiteCommand {
 				.then(
 						literal("stop").then(
 								argument("name", StringArgumentType.greedyString())
-								.suggests(this::suggestServers)
+								.suggests(this::suggestStartedServers)
 								.executes(this::stopServer))
 						.executes(context -> {
 							// SYNTAX
@@ -89,7 +90,7 @@ public class TestsuiteCommand {
 				.then(
 						literal("connect").then(
 								argument("name", StringArgumentType.greedyString())
-								.suggests(this::suggestServerInfos)
+								.suggests(this::suggestStartedServers)
 								.executes(this::connectServer))
 						.executes(context -> {
 							// SYNTAX
@@ -104,12 +105,15 @@ public class TestsuiteCommand {
 				});
 	}
 
-	public CompletableFuture<Suggestions> suggestServerInfos(CommandContext<CommandSource> context, SuggestionsBuilder builder) {
-		return SuggestionProvider.suggest(builder, this.proxy.getAllServers().stream().map(server -> server.getServerInfo().getName()));
-	}
-
 	public CompletableFuture<Suggestions> suggestServers(CommandContext<CommandSource> context, SuggestionsBuilder builder) {
 		return SuggestionProvider.suggest(builder, this.serverManager.getServers().stream()
+				.map(server -> server.getName())
+				.toList());
+	}
+
+	public CompletableFuture<Suggestions> suggestStartedServers(CommandContext<CommandSource> context, SuggestionsBuilder builder) {
+		return SuggestionProvider.suggest(builder, this.serverManager.getServers().stream()
+				.filter(server -> server.getStatus() == UtilizationState.RUNNING)
 				.map(server -> server.getName())
 				.toList());
 	}

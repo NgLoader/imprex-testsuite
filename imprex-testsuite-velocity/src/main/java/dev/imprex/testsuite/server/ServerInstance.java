@@ -15,10 +15,10 @@ import com.mattmalec.pterodactyl4j.client.entities.Utilization;
 import com.mattmalec.pterodactyl4j.client.managers.WebSocketManager;
 import com.mattmalec.pterodactyl4j.entities.Allocation;
 import com.velocitypowered.api.proxy.ProxyServer;
+import com.velocitypowered.api.proxy.server.RegisteredServer;
 import com.velocitypowered.api.proxy.server.ServerInfo;
 
 import dev.imprex.testsuite.TestsuiteLogger;
-import dev.imprex.testsuite.common.override.OverrideHandler;
 import dev.imprex.testsuite.template.ServerTemplate;
 import dev.imprex.testsuite.template.ServerTemplateList;
 import dev.imprex.testsuite.util.PteroServerStatus;
@@ -31,7 +31,6 @@ public class ServerInstance {
 
 	private final ServerManager manager;
 	private final ClientServer server;
-	private final OverrideHandler overrideHandler;
 
 	private final ProxyServer proxyServer;
 	private final ServerInfo serverInfo;
@@ -46,17 +45,23 @@ public class ServerInstance {
 	public ServerInstance(ServerManager manager, ClientServer server) {
 		this.manager = manager;
 		this.server = server;
-		this.overrideHandler = manager.getPlugin().getOverrideHandler();
 		this.proxyServer = manager.getPlugin().getProxy();
 
 		ServerTemplateList templateList = this.manager.getPlugin().getTemplateList();
 		this.template = templateList.getTemplate(this.server.getDescription());
 
 		Allocation allocation = this.server.getPrimaryAllocation();
-		this.serverInfo = new ServerInfo(this.getName(), new InetSocketAddress(allocation.getIP(), allocation.getPortInt()));
-		this.proxyServer.registerServer(this.serverInfo);
 
-		this.scheduleStatsUpdate(STATS_UPDATE_TIME);
+		Optional<RegisteredServer> optionalServerInfo = this.proxyServer.getServer(this.getName());
+		if (optionalServerInfo.isPresent()) {
+			this.serverInfo = optionalServerInfo.get().getServerInfo();
+		} else {
+			this.serverInfo = new ServerInfo(this.getName(), new InetSocketAddress(allocation.getIP(), allocation.getPortInt()));
+			this.proxyServer.registerServer(this.serverInfo);
+		}
+
+//		this.scheduleStatsUpdate(STATS_UPDATE_TIME);
+		this.subscribe();
 	}
 
 	private void scheduleStatsUpdate(int delay) {

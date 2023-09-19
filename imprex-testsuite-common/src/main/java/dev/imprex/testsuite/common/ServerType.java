@@ -1,7 +1,10 @@
 package dev.imprex.testsuite.common;
 
 import java.util.Collections;
-import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public enum ServerType {
@@ -11,16 +14,16 @@ public enum ServerType {
 	PAPER("paper", "https://api.papermc.io/v2/projects/paper"),
 	FOLIA("folia", "https://api.papermc.io/v2/projects/folia");
 
-	public static final List<String> TYPES = Collections.unmodifiableList(Stream.of(ServerType.values()).map(Enum::name).toList());
+	private static final Map<String, ServerType> TYPE_BY_NAME = Stream.of(ServerType.values()).collect(Collectors.toUnmodifiableMap(Enum::name, Function.identity()));
+
+	public static final Set<String> TYPE_NAMES = Collections.unmodifiableSet(TYPE_BY_NAME.keySet());
 
 	public static ServerType fromName(String name) {
-		name = name.toUpperCase();
-		for (ServerType type : values()) {
-			if (type.name().equals(name)) {
-				return type;
-			}
-		}
-		return null;
+		return TYPE_BY_NAME.get(name.toUpperCase());
+	}
+
+	public static boolean isValid(String name) {
+		return TYPE_BY_NAME.containsKey(name.toUpperCase());
 	}
 
 	private final String eggName;
