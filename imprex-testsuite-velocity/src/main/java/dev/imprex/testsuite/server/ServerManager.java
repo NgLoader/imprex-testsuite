@@ -4,9 +4,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -25,6 +27,7 @@ import dev.imprex.testsuite.TestsuitePlugin;
 import dev.imprex.testsuite.common.ServerType;
 import dev.imprex.testsuite.config.ServerConfig;
 import dev.imprex.testsuite.template.ServerTemplate;
+import dev.imprex.testsuite.util.PteroServerStatus;
 
 public class ServerManager implements Runnable {
 
@@ -38,6 +41,7 @@ public class ServerManager implements Runnable {
 	private final AllocationAssignment allocationAssignment;
 
 	private final Map<String, ServerInstance> serverInstances = new ConcurrentHashMap<>();
+	private final List<String> serverInstallation = new CopyOnWriteArrayList<>();
 
 	private AtomicLong lastUpdate = new AtomicLong(0);
 
@@ -59,12 +63,15 @@ public class ServerManager implements Runnable {
 
 		this.pteroClient.retrieveServers().executeAsync((serverList) -> {
 			for (ClientServer server : serverList) {
+				String identifier = server.getIdentifier();
+				ServerInstance instance = this.serverInstances.get(identifier);
+
 				if (server.isSuspended()) {
+					instance.updateServerStatus(PteroServerStatus.SUSPENDED);
+					instance.delete();
 					continue;
 				}
 
-				String identifier = server.getIdentifier();
-				ServerInstance instance = this.serverInstances.get(identifier);
 				if (instance == null) {
 					instance = new ServerInstance(this, server);
 					this.serverInstances.put(identifier, instance);
@@ -72,6 +79,37 @@ public class ServerManager implements Runnable {
 					TestsuiteLogger.info("Detected server instance \"{0}\"", instance.getName());
 				} else {
 					instance.updateStats(server.retrieveUtilization().execute());
+				}
+
+				if (server.isInstalling()) {
+					instance.updateServerStatus(PteroServerStatus.INSTALLING);
+					continue;
+				} else if (server.isTransferring()) {
+					instance.updateServerStatus(PteroServerStatus.TRANSFERING);
+					continue;
+				}
+
+				instance.updateServerStatus(PteroServerStatus.READY);
+
+				if (this.serverInstallation.contains(identifier)) {
+					if (server.isInstalling() || server.isSuspended() || server.isTransferring()) {
+						continue;
+					}
+
+					this.serverInstallation.remove(identifier);
+					if (instance.getTemplate() == null) {
+						TestsuiteLogger.info("[{0}] Installing skipped. No template!", instance.getName());
+						continue;
+					}
+
+					TestsuiteLogger.info("[{0}] Installing template...", instance.getName());
+					instance.setupServer().whenComplete((__, error) -> {
+						if (error != null) {
+							TestsuiteLogger.error(error, "[{0}] Install failed!", server.getName());
+						} else {
+							TestsuiteLogger.info("[{0}] Installed.", server.getName());
+						}
+					});
 				}
 			}
 
@@ -169,6 +207,7 @@ public class ServerManager implements Runnable {
 				.setDisk(serverConfig.storage(), DataType.GB)
 				.setMemory(serverConfig.memory(), DataType.GB)
 				.executeAsync((server) -> {
+					this.serverInstallation.add(server.getIdentifier());
 					this.lastUpdate.getAndSet(0);
 					future.complete(server);
 				}, future::completeExceptionally);

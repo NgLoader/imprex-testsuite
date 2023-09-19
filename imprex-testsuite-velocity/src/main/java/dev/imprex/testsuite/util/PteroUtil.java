@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 import com.mattmalec.pterodactyl4j.PteroAction;
 import com.mattmalec.pterodactyl4j.client.entities.ClientServer;
@@ -18,6 +19,12 @@ public class PteroUtil {
 	public static <T> CompletableFuture<T> execute(PteroAction<T> action) {
 		CompletableFuture<T> future = new CompletableFuture<>();
 		action.executeAsync(future::complete, future::completeExceptionally);
+		return future;
+	}
+
+	public static <T> CompletableFuture<T> execute(PteroAction<T> action, long delay, TimeUnit unit) {
+		CompletableFuture<T> future = new CompletableFuture<>();
+		action.delay(delay, unit).executeAsync(future::complete, future::completeExceptionally);
 		return future;
 	}
 

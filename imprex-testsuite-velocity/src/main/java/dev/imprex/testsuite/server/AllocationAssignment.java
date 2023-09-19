@@ -10,6 +10,7 @@ import com.mattmalec.pterodactyl4j.application.entities.PteroApplication;
 
 import dev.imprex.testsuite.TestsuitePlugin;
 import dev.imprex.testsuite.config.AllocationConfig;
+import dev.imprex.testsuite.util.PteroUtil;
 
 public class AllocationAssignment {
 
@@ -41,7 +42,7 @@ public class AllocationAssignment {
 
 			PortRange portRange = new PortRange(this.minPort, this.maxPort);
 
-			this.receiveAllocations(node)
+			PteroUtil.execute(node.retrieveAllocations().all())
 				.thenApply(allocations -> this.selectAllocation(portRange, allocations))
 				.whenComplete((allocation, error2) -> {
 					if (error2 != null) {
@@ -55,8 +56,8 @@ public class AllocationAssignment {
 					}
 
 					this.createAllocation(node, portRange)
-						.thenCompose(__ -> this.receiveAllocations(node))
-						.thenApply(allocations -> this.selectAllocation(portRange, allocations))
+						.thenCompose(__ -> PteroUtil.execute(node.retrieveAllocations().all()))
+						.thenApply(allocations -> this.selectAllocation(new PortRange(this.minPort, this.maxPort), allocations))
 						.whenComplete((allocation2, error3) -> {
 							if (error3 != null) {
 								future.completeExceptionally(error3);
@@ -71,7 +72,7 @@ public class AllocationAssignment {
 	}
 
 	private CompletableFuture<Void> createAllocation(Node node, PortRange portRange) {
-		int port = portRange.parkFreePort();
+		int port = portRange.peekFreePort();
 		if (port == -1) {
 			return CompletableFuture.failedFuture(new IndexOutOfBoundsException("Port range is full"));
 		}
@@ -100,18 +101,6 @@ public class AllocationAssignment {
 			portRange.markUsedPort(allocation.getPortInt());
 		}
 		return null;
-	}
-
-	private CompletableFuture<List<ApplicationAllocation>> receiveAllocations(Node node) {
-		CompletableFuture<List<ApplicationAllocation>> future = new CompletableFuture<>();
-		node.retrieveAllocations().all().executeAsync(
-			allications -> {
-				future.complete(allications);
-			},
-			error -> {
-				future.completeExceptionally(error);
-			});
-		return future;
 	}
 
 	private CompletableFuture<Node> receiveNode() {

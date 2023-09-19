@@ -21,6 +21,7 @@ import dev.imprex.testsuite.TestsuiteLogger;
 import dev.imprex.testsuite.common.override.OverrideHandler;
 import dev.imprex.testsuite.template.ServerTemplate;
 import dev.imprex.testsuite.template.ServerTemplateList;
+import dev.imprex.testsuite.util.PteroServerStatus;
 import dev.imprex.testsuite.util.PteroUtil;
 import dev.imprex.testsuite.util.PteroUtilization;
 
@@ -40,6 +41,7 @@ public class ServerInstance {
 	private ServerTemplate template;
 	private AtomicReference<Utilization> stats = new AtomicReference<>(new PteroUtilization());
 	private AtomicReference<UtilizationState> status = new AtomicReference<>(UtilizationState.OFFLINE);
+	private AtomicReference<PteroServerStatus> serverStatus = new AtomicReference<>(PteroServerStatus.UNKNOWN);
 
 	public ServerInstance(ServerManager manager, ClientServer server) {
 		this.manager = manager;
@@ -58,6 +60,12 @@ public class ServerInstance {
 	}
 
 	private void scheduleStatsUpdate(int delay) {
+		if (this.serverStatus.get() != PteroServerStatus.READY) {
+			this.server.getScheduleManager().createSchedule().delay(delay, TimeUnit.SECONDS)
+			.executeAsync((__) -> this.scheduleStatsUpdate(delay));
+			return;
+		}
+
 		this.server.retrieveUtilization().delay(delay, TimeUnit.SECONDS).executeAsync(
 			stats -> {
 				this.updateStats(stats);
@@ -71,6 +79,13 @@ public class ServerInstance {
 			});
 	}
 
+	void updateServerStatus(PteroServerStatus serverStatus) {
+		if (this.serverStatus.get() != serverStatus) {
+			this.serverStatus.getAndSet(serverStatus);
+			TestsuiteLogger.info("[{0}] Status: {1}", this.getName(), serverStatus.name());
+		}
+	}
+
 	void updateStats(Utilization stats) {
 		this.stats.getAndSet(stats);
 		this.updateStatus(stats.getState());
@@ -79,7 +94,7 @@ public class ServerInstance {
 	void updateStatus(UtilizationState status) {
 		if (this.status.get() != status) {
 			this.status.getAndSet(status);
-			TestsuiteLogger.info("[{0}] State: {1}", this.getName(), status.name());
+			TestsuiteLogger.info("[{0}] Status: {1}", this.getName(), status.name());
 		}
 	}
 

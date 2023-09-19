@@ -40,6 +40,20 @@ public class PortRange {
 		return -1;
 	}
 
+	public int peekFreePort() {
+		int valid = 0;
+		while (this.used[valid]) {
+			valid++;
+		}
+
+		int port = this.minPort + valid;
+		if (this.validPort(port)) {
+			return port;
+		}
+
+		return -1;
+	}
+
 	public boolean validPort(int port) {
 		return this.minPort <= port && this.maxPort >= port;
 	}

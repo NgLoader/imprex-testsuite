@@ -2,7 +2,6 @@ package dev.imprex.testsuite.common.override;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.CharArrayWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
