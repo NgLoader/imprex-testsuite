@@ -125,6 +125,9 @@ public class TestsuiteCommand {
 	}
 
 	public CompletableFuture<Suggestions> suggestVersions(CommandContext<CommandSource> context, SuggestionsBuilder builder) {
+		String name = context.getArgument("name", String.class);
+		ServerTemplate template = this.templateList.getTemplate(name);
+
 		ServerType serverType = ServerType.fromName(context.getArgument("type", String.class));
 		if (serverType == null) {
 			return builder.buildFuture();
@@ -132,7 +135,15 @@ public class TestsuiteCommand {
 
 		String input = builder.getRemaining().toLowerCase();
 		this.versionCache.getVersionList(serverType).stream()
-			.filter(version -> version.startsWith(input))
+			.filter(version -> version.startsWith(input) || version.contains(input))
+			.filter(version -> {
+				if (template == null) {
+					return true;
+				}
+
+				String serverName = String.format("%s-%s-%s", template.getName().toLowerCase(), serverType.name(), version);
+				return this.serverManager.getServer(serverName) == null;
+			})
 			.sorted(ServerVersion::compareVersion)
 			.forEachOrdered(builder::suggest);
 
@@ -228,6 +239,12 @@ public class TestsuiteCommand {
 
 		context.getSource().sendMessage(Component.text("Creating server " + (template != null ? "template " + template.getName() : name) + "..."));
 		if (template != null) {
+			String serverName = String.format("%s-%s-%s", template.getName(), serverType.name().toLowerCase(), version);
+			if (this.serverManager.getServer(serverName) != null) {
+				context.getSource().sendMessage(Component.text("Template aready exist!"));
+				return Command.SINGLE_SUCCESS;
+			}
+
 			this.serverManager.create(template, serverType, version).whenComplete((__, error) -> {
 				if (error != null) {
 					error.printStackTrace();

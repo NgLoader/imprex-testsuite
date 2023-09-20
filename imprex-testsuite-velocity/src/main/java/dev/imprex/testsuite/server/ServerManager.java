@@ -35,7 +35,7 @@ public class ServerManager implements Runnable {
 
 	private static final long UPDATE_TIME = TimeUnit.SECONDS.toMillis(30);
 
-	private static final Pattern PTERO_JAVA_IMAGES = Pattern.compile("[^|]+\\|(?<url>[^:]+:java_(?<version>\\d+))");
+//	private static final Pattern PTERO_JAVA_IMAGES = Pattern.compile("[^|]+\\|(?<url>[^:]+:java_(?<version>\\d+))");
 	private static final Pattern MINECRAFT_VERSION = Pattern.compile("(?<major>\\d+)\\.(?<minor>\\d+)(?:\\.(?<patch>\\d+))?");
 
 	private final TestsuitePlugin plugin;
@@ -212,21 +212,25 @@ public class ServerManager implements Runnable {
 			int minorVersion = Integer.parseInt(versionMatcher.group("minor"));
 			int requestedJavaVersion = minorVersion < 17 ? 11 : 17;
 
-
 			String dockerImage = null;
-			Matcher dockerMatcher = PTERO_JAVA_IMAGES.matcher(egg.getDockerImage());
-			while (dockerMatcher.find()) {
-				String url = dockerMatcher.group("url");
-				if (dockerImage == null) {
-					dockerImage = url;
-				}
-
-				int dockerVersion = Integer.parseInt(dockerMatcher.group("version"));
-				if (dockerVersion == requestedJavaVersion) {
-					dockerImage = url;
-					break;
-				}
+			if (requestedJavaVersion == 11) {
+				dockerImage = "ghcr.io/pterodactyl/yolks:java_11";
+			} else {
+				dockerImage = egg.getDockerImage();
 			}
+//			Matcher dockerMatcher = PTERO_JAVA_IMAGES.matcher(egg.getDockerImage());
+//			while (dockerMatcher.find()) {
+//				String url = dockerMatcher.group("url");
+//				if (dockerImage == null) {
+//					dockerImage = url;
+//				}
+//
+//				int dockerVersion = Integer.parseInt(dockerMatcher.group("version"));
+//				if (dockerVersion == requestedJavaVersion) {
+//					dockerImage = url;
+//					break;
+//				}
+//			}
 
 			if (dockerImage == null) {
 				future.completeExceptionally(new IllegalArgumentException("Unable to parse or find docker images."));
@@ -243,6 +247,7 @@ public class ServerManager implements Runnable {
 				.setDisk(serverConfig.storage(), DataType.GB)
 				.setMemory(serverConfig.memory(), DataType.GB)
 				.setDockerImage(dockerImage)
+				.startOnCompletion(false)
 				.executeAsync((server) -> {
 					this.serverInstallation.add(server.getIdentifier());
 					this.lastUpdate.getAndSet(0);

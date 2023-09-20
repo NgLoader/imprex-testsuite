@@ -205,6 +205,10 @@ public class ServerInstance {
 		return this.status.get();
 	}
 
+	public PteroServerStatus getServerStatus() {
+		return this.serverStatus.get();
+	}
+
 	public boolean hasTemplate() {
 		return this.template != null;
 	}

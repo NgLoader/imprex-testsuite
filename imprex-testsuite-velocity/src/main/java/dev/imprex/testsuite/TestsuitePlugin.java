@@ -49,6 +49,8 @@ public class TestsuitePlugin {
 	private ServerTemplateList templateList;
 	private ServerManager serverManager;
 
+	private TestsuiteVisual testsuiteVisual;
+
 	@Inject
 	public TestsuitePlugin(Logger logger, @DataDirectory Path dataFolder) {
 		TestsuiteLogger.initialize(logger);
@@ -68,7 +70,7 @@ public class TestsuitePlugin {
 		this.pteroApplication = PteroBuilder.createApplication(tylConfig.url(), tylConfig.applicationToken());
 		this.pteroClient = PteroBuilder.create(tylConfig.url(), tylConfig.clientToken())
 				.setWebSocketClient(new OkHttpClient.Builder()
-						.pingInterval(30, TimeUnit.SECONDS)
+						.pingInterval(1, TimeUnit.SECONDS)
 						.build())
 				.buildClient();
 
@@ -78,6 +80,8 @@ public class TestsuitePlugin {
 		this.templateList = new ServerTemplateList(this, this.dataFolder.resolve("template"));
 		this.serverManager = new ServerManager(this);
 
+		this.testsuiteVisual = new TestsuiteVisual(this);
+
 		Scheduler scheduler = this.proxy.getScheduler();
 		scheduler.buildTask(this, this.versionCache)
 			.repeat(1, TimeUnit.MINUTES)
@@ -86,6 +90,10 @@ public class TestsuitePlugin {
 
 		scheduler.buildTask(this, this.serverManager)
 			.repeat(1, TimeUnit.SECONDS)
+			.schedule();
+
+		scheduler.buildTask(this, this.testsuiteVisual)
+			.repeat(4, TimeUnit.SECONDS)
 			.schedule();
 
 		CommandManager commandManager = this.proxy.getCommandManager();
@@ -120,6 +128,10 @@ public class TestsuitePlugin {
 
 	public ServerManager getServerManager() {
 		return this.serverManager;
+	}
+
+	public TestsuiteVisual getTestsuiteVisual() {
+		return this.testsuiteVisual;
 	}
 
 	public TestsuiteConfig getConfig() {
