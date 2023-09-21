@@ -1,6 +1,7 @@
 package dev.imprex.testsuite;
 
 import com.mattmalec.pterodactyl4j.UtilizationState;
+import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 
 import dev.imprex.testsuite.server.ServerInstance;
@@ -32,18 +33,40 @@ public class TestsuiteVisual implements Runnable {
 
 			Component componentInstance = Component.text(instance.getName());
 
-			componentInstance.color(switch (instance.getServerStatus()) {
-			case INSTALLING -> TextColor.color(200, 40, 200);
-			default -> switch (instance.getStatus()) {
-					case STARTING -> TextColor.color(0, 200, 0);
-					case RUNNING -> TextColor.color(60, 180, 60);
-					case STOPPING -> TextColor.color(200, 40, 40);
-					default -> TextColor.color(100, 100, 100);
-				};
-			});
-			component.append(componentInstance);
-			component.append(componentSpacer);
+//			componentInstance.color(switch (instance.getServerStatus()) {
+//			case INSTALLING -> TextColor.color(200, 40, 200);
+//			default -> switch (instance.getStatus()) {
+//					case STARTING -> TextColor.color(0, 200, 0);
+//					case RUNNING -> TextColor.color(60, 180, 60);
+//					case STOPPING -> TextColor.color(200, 40, 40);
+//					default -> TextColor.color(100, 100, 100);
+//				};
+//			});
+			switch (instance.getServerStatus()) {
+			case INSTALLING:
+				componentInstance = componentInstance.color(TextColor.color(200, 40, 200));
+				break;
+			default: {
+				switch (instance.getStatus()) {
+				case STARTING:
+					componentInstance = componentInstance.color(TextColor.color(140, 200, 130));
+					break;
+				case RUNNING:
+					componentInstance = componentInstance.color(TextColor.color(60, 180, 60));
+					break;
+				case STOPPING:
+					componentInstance = componentInstance.color(TextColor.color(200, 40, 40));
+					break;
+				default:
+					componentInstance = componentInstance.color(TextColor.color(100, 100, 100));
+					break;
+				}
+			}
+			}
+			component = component.append(componentInstance).append(componentSpacer);
 		}
-		this.proxy.getAllPlayers().forEach(player -> player.sendPlayerListFooter(component));
+		for (Player player : this.proxy.getAllPlayers()) {
+			player.sendPlayerListFooter(component);
+		}
 	}
 }

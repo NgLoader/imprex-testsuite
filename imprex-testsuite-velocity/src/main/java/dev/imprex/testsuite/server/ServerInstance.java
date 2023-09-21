@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.mattmalec.pterodactyl4j.UtilizationState;
@@ -26,8 +25,6 @@ import dev.imprex.testsuite.util.PteroUtil;
 import dev.imprex.testsuite.util.PteroUtilization;
 
 public class ServerInstance {
-
-	private static final int STATS_UPDATE_TIME = 15;
 
 	private final ServerManager manager;
 	private final ClientServer server;
@@ -60,34 +57,14 @@ public class ServerInstance {
 			this.proxyServer.registerServer(this.serverInfo);
 		}
 
-//		this.scheduleStatsUpdate(STATS_UPDATE_TIME);
 		this.subscribe();
-	}
-
-	private void scheduleStatsUpdate(int delay) {
-		if (this.serverStatus.get() != PteroServerStatus.READY) {
-			this.server.getScheduleManager().createSchedule().delay(delay, TimeUnit.SECONDS)
-			.executeAsync((__) -> this.scheduleStatsUpdate(delay));
-			return;
-		}
-
-		this.server.retrieveUtilization().delay(delay, TimeUnit.SECONDS).executeAsync(
-			stats -> {
-				this.updateStats(stats);
-				this.scheduleStatsUpdate(STATS_UPDATE_TIME);
-			},
-			error -> {
-				TestsuiteLogger.error(error, "Unable to fetch stats from server {0} waiting {0} seconds.",
-						this.getName(),
-						STATS_UPDATE_TIME * 10);
-				this.scheduleStatsUpdate(STATS_UPDATE_TIME * 10);
-			});
 	}
 
 	void updateServerStatus(PteroServerStatus serverStatus) {
 		if (this.serverStatus.get() != serverStatus) {
 			this.serverStatus.getAndSet(serverStatus);
 			TestsuiteLogger.info("[{0}] Status: {1}", this.getName(), serverStatus.name());
+			TestsuiteLogger.broadcast("[{0}] Status: {1}", this.getName(), serverStatus.name());
 		}
 	}
 
@@ -100,6 +77,7 @@ public class ServerInstance {
 		if (this.status.get() != status) {
 			this.status.getAndSet(status);
 			TestsuiteLogger.info("[{0}] Status: {1}", this.getName(), status.name());
+			TestsuiteLogger.broadcast("[{0}] Status: {1}", this.getName(), status.name());
 		}
 	}
 
@@ -193,6 +171,7 @@ public class ServerInstance {
 
 	public void close() {
 		TestsuiteLogger.info("Removing server instance \"{0}\"", this.getName());
+		TestsuiteLogger.broadcast("Removing server instance \"{0}\"", this.getName());
 		this.unsubscribe();
 		this.proxyServer.unregisterServer(this.serverInfo);
 	}

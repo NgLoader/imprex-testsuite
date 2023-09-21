@@ -19,6 +19,7 @@ import com.velocitypowered.api.plugin.annotation.DataDirectory;
 import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.scheduler.Scheduler;
 
+import dev.imprex.testsuite.command.CommandReconnect;
 import dev.imprex.testsuite.common.ServerVersionCache;
 import dev.imprex.testsuite.common.override.OverrideHandler;
 import dev.imprex.testsuite.config.PterodactylConfig;
@@ -59,6 +60,8 @@ public class TestsuitePlugin {
 
 	@Subscribe
 	public void onProxyInitialize(ProxyInitializeEvent event) {
+		TestsuiteLogger.initialize(this.proxy);
+
 		this.config = new TestsuiteConfig(this.dataFolder.resolve("config.json"));
 		PterodactylConfig tylConfig = this.config.getPterodactylConfig();
 
@@ -97,6 +100,17 @@ public class TestsuitePlugin {
 			.schedule();
 
 		CommandManager commandManager = this.proxy.getCommandManager();
+
+		// reconnect
+		CommandMeta commandMetaReconnect = commandManager.metaBuilder("reconnect")
+				.aliases("rc")
+				.plugin(this)
+				.build();
+
+		BrigadierCommand commandReconnect = new BrigadierCommand(new CommandReconnect(this).create());
+		commandManager.register(commandMetaReconnect, commandReconnect);
+
+		// testsuite
 		CommandMeta commandMeta = commandManager.metaBuilder("testsuite")
 			.aliases("test", "ts")
 			.plugin(this)
