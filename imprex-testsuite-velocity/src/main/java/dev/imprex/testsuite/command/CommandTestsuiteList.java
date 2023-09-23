@@ -70,8 +70,7 @@ public class CommandTestsuiteList {
 			Component serverInfo = Component.text("  - ")
 					.color(Chat.Color.GRAY)
 					.append(Component.text(server.getName())
-							.color(Chat.Color.statusColor(server)))
-					.appendSpace();
+							.color(Chat.Color.statusColor(server)));
 
 			Component serverAction;
 			if (server.getStatus() == UtilizationState.OFFLINE) {
@@ -84,10 +83,10 @@ public class CommandTestsuiteList {
 						.append(Component.text(server.getCurrentServer().getPlayersConnected().size())
 								.color(Chat.Color.LIGHT_GREEN))
 						.append(Component.text(")")
-								.color(Chat.Color.GRAY))
-						.appendNewline();
+								.color(Chat.Color.GRAY));
 
 				serverAction = playerCount
+						.appendSpace()
 						.append(
 							Component.text("Stop")
 							.color(Chat.Color.RED)
