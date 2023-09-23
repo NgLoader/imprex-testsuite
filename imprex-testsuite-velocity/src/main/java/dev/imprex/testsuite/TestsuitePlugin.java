@@ -9,9 +9,6 @@ import com.google.inject.Inject;
 import com.mattmalec.pterodactyl4j.PteroBuilder;
 import com.mattmalec.pterodactyl4j.application.entities.PteroApplication;
 import com.mattmalec.pterodactyl4j.client.entities.PteroClient;
-import com.velocitypowered.api.command.BrigadierCommand;
-import com.velocitypowered.api.command.CommandManager;
-import com.velocitypowered.api.command.CommandMeta;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
 import com.velocitypowered.api.plugin.Plugin;
@@ -19,7 +16,9 @@ import com.velocitypowered.api.plugin.annotation.DataDirectory;
 import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.scheduler.Scheduler;
 
+import dev.imprex.testsuite.command.CommandConnect;
 import dev.imprex.testsuite.command.CommandReconnect;
+import dev.imprex.testsuite.command.CommandTestsuite;
 import dev.imprex.testsuite.common.ServerVersionCache;
 import dev.imprex.testsuite.common.override.OverrideHandler;
 import dev.imprex.testsuite.config.PterodactylConfig;
@@ -62,6 +61,7 @@ public class TestsuitePlugin {
 	public void onProxyInitialize(ProxyInitializeEvent event) {
 		TestsuiteLogger.initialize(this.proxy);
 
+		// Initialize configuration
 		this.config = new TestsuiteConfig(this.dataFolder.resolve("config.json"));
 		PterodactylConfig tylConfig = this.config.getPterodactylConfig();
 
@@ -70,13 +70,15 @@ public class TestsuitePlugin {
 			return;
 		}
 
+		// Login into pterodactyl
 		this.pteroApplication = PteroBuilder.createApplication(tylConfig.url(), tylConfig.applicationToken());
 		this.pteroClient = PteroBuilder.create(tylConfig.url(), tylConfig.clientToken())
 				.setWebSocketClient(new OkHttpClient.Builder()
-						.pingInterval(1, TimeUnit.SECONDS)
+						.pingInterval(30, TimeUnit.SECONDS)
 						.build())
 				.buildClient();
 
+		// Register systems
 		this.overrideHandler = new OverrideHandler();
 
 		this.versionCache = new ServerVersionCache(dataFolder.resolve("version_cache.json"));
@@ -85,6 +87,7 @@ public class TestsuitePlugin {
 
 		this.testsuiteVisual = new TestsuiteVisual(this);
 
+		// Start scheduler
 		Scheduler scheduler = this.proxy.getScheduler();
 		scheduler.buildTask(this, this.versionCache)
 			.repeat(1, TimeUnit.MINUTES)
@@ -99,25 +102,10 @@ public class TestsuitePlugin {
 			.repeat(4, TimeUnit.SECONDS)
 			.schedule();
 
-		CommandManager commandManager = this.proxy.getCommandManager();
-
-		// reconnect
-		CommandMeta commandMetaReconnect = commandManager.metaBuilder("reconnect")
-				.aliases("rc")
-				.plugin(this)
-				.build();
-
-		BrigadierCommand commandReconnect = new BrigadierCommand(new CommandReconnect(this).create());
-		commandManager.register(commandMetaReconnect, commandReconnect);
-
-		// testsuite
-		CommandMeta commandMeta = commandManager.metaBuilder("testsuite")
-			.aliases("test", "ts")
-			.plugin(this)
-			.build();
-
-		BrigadierCommand command = new BrigadierCommand(new TestsuiteCommand(this).create());
-		commandManager.register(commandMeta, command);
+		// Register commands
+		new CommandTestsuite(this);
+		new CommandReconnect(this);
+		new CommandConnect(this);
 	}
 
 	public PteroApplication getPteroApplication() {

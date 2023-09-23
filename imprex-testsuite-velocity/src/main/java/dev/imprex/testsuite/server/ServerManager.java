@@ -61,6 +61,10 @@ public class ServerManager implements Runnable {
 
 	@Override
 	public void run() {
+		for (ServerInstance instance : this.serverInstances.values()) {
+			instance.run();
+		}
+
 		if (this.lastUpdate.get() > System.currentTimeMillis()) {
 			return;
 		}
@@ -79,7 +83,6 @@ public class ServerManager implements Runnable {
 					instance = new ServerInstance(this, server);
 					this.serverInstances.put(identifier, instance);
 
-					TestsuiteLogger.info("Detected server instance \"{0}\"", instance.getName());
 					TestsuiteLogger.broadcast("Detected server instance \"{0}\"", instance.getName());
 				} else {
 					instance.updateStats(server.retrieveUtilization().execute());
@@ -105,19 +108,16 @@ public class ServerManager implements Runnable {
 
 					this.serverInstallation.remove(identifier);
 					if (instance.getTemplate() == null) {
-						TestsuiteLogger.info("[{0}] Installing skipped. No template!", instance.getName());
 						TestsuiteLogger.broadcast("[{0}] Installing skipped. No template!", instance.getName());
 						continue;
 					}
 
-					TestsuiteLogger.info("[{0}] Installing template...", instance.getName());
 					TestsuiteLogger.broadcast("[{0}] Installing template...", instance.getName());
 					instance.setupServer().whenComplete((__, error) -> {
 						if (error != null) {
 							TestsuiteLogger.error(error, "[{0}] Install failed!", server.getName());
 							TestsuiteLogger.broadcast("[{0}] Install failed!", server.getName());
 						} else {
-							TestsuiteLogger.info("[{0}] Installed.", server.getName());
 							TestsuiteLogger.broadcast("[{0}] Installed.", server.getName());
 						}
 					});

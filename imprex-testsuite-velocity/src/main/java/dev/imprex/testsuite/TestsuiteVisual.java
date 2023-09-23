@@ -6,9 +6,9 @@ import com.velocitypowered.api.proxy.ProxyServer;
 
 import dev.imprex.testsuite.server.ServerInstance;
 import dev.imprex.testsuite.server.ServerManager;
+import dev.imprex.testsuite.util.Chat;
 import dev.imprex.testsuite.util.PteroServerStatus;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.TextColor;
 
 public class TestsuiteVisual implements Runnable {
 
@@ -31,40 +31,12 @@ public class TestsuiteVisual implements Runnable {
 				continue;
 			}
 
-			Component componentInstance = Component.text(instance.getName());
-
-//			componentInstance.color(switch (instance.getServerStatus()) {
-//			case INSTALLING -> TextColor.color(200, 40, 200);
-//			default -> switch (instance.getStatus()) {
-//					case STARTING -> TextColor.color(0, 200, 0);
-//					case RUNNING -> TextColor.color(60, 180, 60);
-//					case STOPPING -> TextColor.color(200, 40, 40);
-//					default -> TextColor.color(100, 100, 100);
-//				};
-//			});
-			switch (instance.getServerStatus()) {
-			case INSTALLING:
-				componentInstance = componentInstance.color(TextColor.color(200, 40, 200));
-				break;
-			default: {
-				switch (instance.getStatus()) {
-				case STARTING:
-					componentInstance = componentInstance.color(TextColor.color(140, 200, 130));
-					break;
-				case RUNNING:
-					componentInstance = componentInstance.color(TextColor.color(60, 180, 60));
-					break;
-				case STOPPING:
-					componentInstance = componentInstance.color(TextColor.color(200, 40, 40));
-					break;
-				default:
-					componentInstance = componentInstance.color(TextColor.color(100, 100, 100));
-					break;
-				}
-			}
-			}
-			component = component.append(componentInstance).append(componentSpacer);
+			component = component
+					.append(Component.text(instance.getName())
+						.color(Chat.Color.statusColor(instance)))
+					.append(componentSpacer);
 		}
+
 		for (Player player : this.proxy.getAllPlayers()) {
 			player.sendPlayerListFooter(component);
 		}

@@ -1,6 +1,8 @@
 package dev.imprex.testsuite.server;
 
+import com.mattmalec.pterodactyl4j.client.managers.WebSocketManager;
 import com.mattmalec.pterodactyl4j.client.ws.events.StatusUpdateEvent;
+import com.mattmalec.pterodactyl4j.client.ws.events.connection.FailureEvent;
 import com.mattmalec.pterodactyl4j.client.ws.events.install.InstallCompletedEvent;
 import com.mattmalec.pterodactyl4j.client.ws.events.install.InstallStartedEvent;
 import com.mattmalec.pterodactyl4j.client.ws.hooks.ClientSocketListenerAdapter;
@@ -28,5 +30,13 @@ public class ServerListener extends ClientSocketListenerAdapter {
 	@Override
 	public void onStatusUpdate(StatusUpdateEvent event) {
 		this.instance.updateStatus(event.getState());
+	}
+
+	@Override
+	public void onFailure(FailureEvent event) {
+		WebSocketManager webSocketManager = this.instance.getWebSocketManager();
+		if (webSocketManager != null) {
+			webSocketManager.reconnect();
+		}
 	}
 }

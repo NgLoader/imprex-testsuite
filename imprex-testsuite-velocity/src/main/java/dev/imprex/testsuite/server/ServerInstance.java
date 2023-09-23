@@ -6,7 +6,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import com.mattmalec.pterodactyl4j.UtilizationState;
 import com.mattmalec.pterodactyl4j.client.entities.ClientServer;
@@ -24,47 +28,91 @@ import dev.imprex.testsuite.util.PteroServerStatus;
 import dev.imprex.testsuite.util.PteroUtil;
 import dev.imprex.testsuite.util.PteroUtilization;
 
-public class ServerInstance {
+public class ServerInstance implements Runnable {
+
+	private static final long MAX_INACTIVE_TIME = TimeUnit.MINUTES.toMillis(5);
 
 	private final ServerManager manager;
 	private final ClientServer server;
 
-	private final ProxyServer proxyServer;
-	private final ServerInfo serverInfo;
+	private final ProxyServer proxy;
+	private final RegisteredServer proxyServer;
 
 	private WebSocketManager webSocketManager;
+	private Lock webSocketLock = new ReentrantLock();
 
 	private ServerTemplate template;
 	private AtomicReference<Utilization> stats = new AtomicReference<>(new PteroUtilization());
 	private AtomicReference<UtilizationState> status = new AtomicReference<>(UtilizationState.OFFLINE);
 	private AtomicReference<PteroServerStatus> serverStatus = new AtomicReference<>(PteroServerStatus.UNKNOWN);
 
+	private AtomicLong inactiveTime = new AtomicLong(System.currentTimeMillis());
+
 	public ServerInstance(ServerManager manager, ClientServer server) {
 		this.manager = manager;
 		this.server = server;
-		this.proxyServer = manager.getPlugin().getProxy();
+		this.proxy = manager.getPlugin().getProxy();
 
 		ServerTemplateList templateList = this.manager.getPlugin().getTemplateList();
 		this.template = templateList.getTemplate(this.server.getDescription());
 
 		Allocation allocation = this.server.getPrimaryAllocation();
 
-		Optional<RegisteredServer> optionalServerInfo = this.proxyServer.getServer(this.getName());
+		Optional<RegisteredServer> optionalServerInfo = this.proxy.getServer(this.getName());
 		if (optionalServerInfo.isPresent()) {
-			this.serverInfo = optionalServerInfo.get().getServerInfo();
+			this.proxyServer = optionalServerInfo.get();
 		} else {
-			this.serverInfo = new ServerInfo(this.getName(), new InetSocketAddress(allocation.getIP(), allocation.getPortInt()));
-			this.proxyServer.registerServer(this.serverInfo);
+			ServerInfo serverInfo = new ServerInfo(this.getName(), new InetSocketAddress(allocation.getIP(), allocation.getPortInt()));
+			this.proxyServer = this.proxy.registerServer(serverInfo);
 		}
 
-		this.subscribe();
+		this.server.retrieveUtilization().executeAsync(stats -> {
+			this.updateStats(stats);
+		}, error -> {
+			TestsuiteLogger.error(error, "[{0}] Error fetching current server stats!", this.getName());
+		});
+	}
+
+	@Override
+	public void run() {
+		if (this.template == null) {
+			return;
+		}
+
+		this.webSocketLock.lock();
+		try {
+			if (this.webSocketManager == null) {
+				return;
+			}
+		} finally {
+			this.webSocketLock.unlock();
+		}
+
+		if (this.inactiveTime.get() > System.currentTimeMillis()) {
+			return;
+		}
+		this.resetInactiveTime();
+
+		UtilizationState status = this.status.get();
+		if (status == UtilizationState.RUNNING &&
+				this.proxyServer.getPlayersConnected().isEmpty()) {
+			TestsuiteLogger.broadcast("[{0}] Stopping duo to inactivity", this.getName());
+			this.stop();
+		} else if (status == UtilizationState.OFFLINE) {
+			PteroServerStatus serverStatus = this.serverStatus.get();
+			if (serverStatus != PteroServerStatus.INSTALLING) {
+				this.unsubscribe();
+			}
+		}
 	}
 
 	void updateServerStatus(PteroServerStatus serverStatus) {
-		if (this.serverStatus.get() != serverStatus) {
-			this.serverStatus.getAndSet(serverStatus);
-			TestsuiteLogger.info("[{0}] Status: {1}", this.getName(), serverStatus.name());
+		if (this.serverStatus.getAndSet(serverStatus) != serverStatus) {
 			TestsuiteLogger.broadcast("[{0}] Status: {1}", this.getName(), serverStatus.name());
+
+			if (serverStatus == PteroServerStatus.INSTALLING) {
+				this.subscribe();
+			}
 		}
 	}
 
@@ -74,10 +122,45 @@ public class ServerInstance {
 	}
 
 	void updateStatus(UtilizationState status) {
-		if (this.status.get() != status) {
-			this.status.getAndSet(status);
-			TestsuiteLogger.info("[{0}] Status: {1}", this.getName(), status.name());
+		if (this.status.getAndSet(status) != status) {
 			TestsuiteLogger.broadcast("[{0}] Status: {1}", this.getName(), status.name());
+
+			if (status == UtilizationState.OFFLINE) {
+				// Wait 5min. for some other actions and then close the web socket
+//				this.unsubscribe();
+			} else {
+				this.subscribe();
+			}
+		}
+	}
+
+	public void subscribe() {
+		this.resetInactiveTime();
+
+		this.webSocketLock.lock();
+		try {
+			if (this.webSocketManager == null) {
+				this.resetInactiveTime();
+				this.webSocketManager = this.server.getWebSocketBuilder()
+						.addEventListeners(new ServerListener(this))
+						.build();
+				TestsuiteLogger.broadcast("[{0}] Connecting to websocket...", this.getName());
+			}
+		} finally {
+			this.webSocketLock.unlock();
+		}
+	}
+
+	public void unsubscribe() {
+		this.webSocketLock.lock();
+		try {
+			if (this.webSocketManager != null) {
+				this.webSocketManager.shutdown();
+				this.webSocketManager = null;
+				TestsuiteLogger.broadcast("[{0}] Disonnected from websocket.", this.getName());
+			}
+		} finally {
+			this.webSocketLock.unlock();
 		}
 	}
 
@@ -126,42 +209,33 @@ public class ServerInstance {
 		return future;
 	}
 
-	public void subscribe() {
-		if (this.webSocketManager == null) {
-			this.webSocketManager = this.server.getWebSocketBuilder()
-					.addEventListeners(new ServerListener(this))
-					.build();
-		}
-	}
-
-	public void unsubscribe() {
-		if (this.webSocketManager != null) {
-			this.webSocketManager.shutdown();
-			this.webSocketManager = null;
-		}
-	}
-
 	public CompletableFuture<Void> executeCommand(String command) {
+		this.subscribe();
 		return PteroUtil.execute(this.server.sendCommand(command));
 	}
 
 	public CompletableFuture<Void> start() {
+		this.subscribe();
 		return PteroUtil.execute(this.server.start());
 	}
 
 	public CompletableFuture<Void> restart() {
+		this.subscribe();
 		return PteroUtil.execute(this.server.restart());
 	}
 
 	public CompletableFuture<Void> stop() {
+		this.subscribe();
 		return PteroUtil.execute(this.server.stop());
 	}
 
 	public CompletableFuture<Void> kill() {
+		this.subscribe();
 		return PteroUtil.execute(this.server.kill());
 	}
 
 	public CompletableFuture<Void> reinstall() {
+		this.subscribe();
 		return PteroUtil.execute(this.server.getManager().reinstall());
 	}
 
@@ -169,11 +243,27 @@ public class ServerInstance {
 		return this.manager.deleteInstance(this.getIdentifier());
 	}
 
+	public void resetInactiveTime() {
+		this.inactiveTime.getAndSet(System.currentTimeMillis() + MAX_INACTIVE_TIME);
+	}
+
 	public void close() {
-		TestsuiteLogger.info("Removing server instance \"{0}\"", this.getName());
 		TestsuiteLogger.broadcast("Removing server instance \"{0}\"", this.getName());
+		this.proxy.unregisterServer(this.proxyServer.getServerInfo());
 		this.unsubscribe();
-		this.proxyServer.unregisterServer(this.serverInfo);
+	}
+
+	public WebSocketManager getWebSocketManager() {
+		this.webSocketLock.lock();
+		try {
+			return this.webSocketManager;
+		} finally {
+			this.webSocketLock.unlock();
+		}
+	}
+
+	public RegisteredServer getCurrentServer() {
+		return this.proxyServer;
 	}
 
 	public Utilization getStats() {
