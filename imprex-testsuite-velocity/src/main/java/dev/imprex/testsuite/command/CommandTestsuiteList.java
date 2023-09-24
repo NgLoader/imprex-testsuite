@@ -13,6 +13,8 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import com.velocitypowered.api.command.CommandSource;
+import com.velocitypowered.api.proxy.Player;
+import com.velocitypowered.api.proxy.ServerConnection;
 
 import dev.imprex.testsuite.TestsuitePlugin;
 import dev.imprex.testsuite.common.SuggestionProvider;
@@ -23,6 +25,7 @@ import dev.imprex.testsuite.template.ServerTemplateList;
 import dev.imprex.testsuite.util.Chat;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.event.HoverEvent;
 
 public class CommandTestsuiteList {
 
@@ -63,7 +66,7 @@ public class CommandTestsuiteList {
 				.sorted((a, b) -> a.getName().compareTo(b.getName()))
 				.toList()) {
 
-			if (template != null && template.equals(server.getTemplate())) {
+			if (template != null && !template.equals(server.getTemplate())) {
 				continue;
 			}
 
@@ -81,20 +84,42 @@ public class CommandTestsuiteList {
 				Component playerCount = Component.text("(")
 						.color(Chat.Color.GRAY)
 						.append(Component.text(server.getCurrentServer().getPlayersConnected().size())
-								.color(Chat.Color.LIGHT_GREEN))
+								.color(Chat.Color.LIGHT_GREEN)
+								.hoverEvent(HoverEvent.showText(Component.text("Player count")
+										.color(Chat.Color.LIGHT_GREEN))))
+						.append(Component.text(" | "))
+						.append(Component.text(milliToSeconds(server.getInactiveTime()) + "s")
+								.color(Chat.Color.DARK_GREEN)
+								.hoverEvent(HoverEvent.showText(Component.text("Inactive time")
+										.color(Chat.Color.DARK_GREEN))))
 						.append(Component.text(")")
 								.color(Chat.Color.GRAY));
 
-				serverAction = playerCount
+				Component connectServer = Component.text("Connect")
+						.color(Chat.Color.DARK_GREEN)
+						.clickEvent(ClickEvent.runCommand("/connect " + server.getName()));
+
+				serverAction = Component.text("")
+						.append(playerCount)
 						.appendSpace()
 						.append(
 							Component.text("Stop")
 							.color(Chat.Color.RED)
-							.clickEvent(ClickEvent.suggestCommand("/testsuite stop " + server.getName()))
+							.clickEvent(ClickEvent.suggestCommand("/testsuite stop " + server.getName())));
+
+				if (context.getSource() instanceof Player player) {
+					ServerConnection serverConnection = player.getCurrentServer().orElseGet(() -> null);
+					if (serverConnection == null ||
+							!serverConnection.getServerInfo().equals(server.getCurrentServer().getServerInfo())) {
+						serverAction = serverAction
+								.appendSpace()
+								.append(connectServer);
+					}
+				} else {
+					serverAction = serverAction
 							.appendSpace()
-							.append(Component.text("Connect")
-									.color(Chat.Color.DARK_GREEN)
-									.clickEvent(ClickEvent.suggestCommand("/connect " + server.getName()))));
+							.append(connectServer);
+				}
 			} else {
 				serverAction = Component.empty();
 			}
@@ -111,6 +136,10 @@ public class CommandTestsuiteList {
 				.append(Chat.PREFIX)
 				.append(Component.text("[] --- --- { Server List } --- --- []")));
 		return Command.SINGLE_SUCCESS;
+	}
+
+	public int milliToSeconds(long time) {
+		return (int) ((time - System.currentTimeMillis()) / 1000);
 	}
 
 	public CompletableFuture<Suggestions> suggestTemplates(CommandContext<CommandSource> context, SuggestionsBuilder builder) {

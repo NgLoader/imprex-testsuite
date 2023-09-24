@@ -19,20 +19,20 @@ import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.proxy.ServerConnection;
-import com.velocitypowered.api.proxy.server.RegisteredServer;
 
 import dev.imprex.testsuite.TestsuitePlugin;
+import dev.imprex.testsuite.server.ServerInstance;
 import dev.imprex.testsuite.server.ServerManager;
 import dev.imprex.testsuite.util.Chat;
 
-public class CommandConnect {
+public class CommandStop {
 
 	public static LiteralArgumentBuilder<CommandSource> COMMAND;
 
 	private final ProxyServer proxy;
 	private final ServerManager serverManager;
 
-	public CommandConnect(TestsuitePlugin plugin) {
+	public CommandStop(TestsuitePlugin plugin) {
 		this.proxy = plugin.getProxy();
 		this.serverManager = plugin.getServerManager();
 
@@ -42,8 +42,7 @@ public class CommandConnect {
 
 	public void register() {
 		CommandManager commandManager = this.proxy.getCommandManager();
-		CommandMeta commandMeta = commandManager.metaBuilder("connect")
-						.aliases("con", "tc")
+		CommandMeta commandMeta = commandManager.metaBuilder("stop")
 				.plugin(this)
 				.build();
 
@@ -52,45 +51,63 @@ public class CommandConnect {
 	}
 
 	public LiteralArgumentBuilder<CommandSource> create() {
-		return literal("connect")
-				.requires(sender -> sender instanceof Player)
-				.executes(command -> Chat.send(command, "Please enter a server name"))
+		return literal("stop")
+				.executes(this::stopCurrentServer)
 				.then(
 					argument("name", StringArgumentType.greedyString())
 					.suggests(this::suggestServers)
-					.executes(this::connectServer));
+					.executes(this::stopTargetServer));
 	}
 
-	public int connectServer(CommandContext<CommandSource> context) {
-		String serverName = context.getArgument("name", String.class);
-		RegisteredServer server = this.proxy.getServer(serverName).orElseGet(() -> null);
-		if (server == null) {
-			Chat.send(context, "Unable to find server \"{0}\"", serverName);
-			return Command.SINGLE_SUCCESS;
-		}
+	public int stopCurrentServer(CommandContext<CommandSource> context) {
+		if (context.getSource() instanceof Player player) {
+			ServerConnection serverConnection = player.getCurrentServer().orElseGet(() -> null);
+			if (serverConnection == null) {
+				Chat.send(context, "Your currently not connected to any server!");
+				return Command.SINGLE_SUCCESS;
+			}
 
-		if (server.getPlayersConnected().contains(context.getSource())) {
-			Chat.send(context, "Your already connected to this server!");
-			return Command.SINGLE_SUCCESS;
+			String serverName = serverConnection.getServerInfo().getName();
+			ServerInstance server = this.serverManager.getServer(serverName);
+			this.stopServer(context.getSource(), server);
+		} else {
+			Chat.send(context, "Server was not found!");
 		}
-
-		((Player) context.getSource()).createConnectionRequest(server).connectWithIndication();
-		Chat.send(context, "Connecting to \"{0}\"", server.getServerInfo().getName());
 		return Command.SINGLE_SUCCESS;
+	}
+
+	public int stopTargetServer(CommandContext<CommandSource> context) {
+		String serverName = context.getArgument("name", String.class);
+		ServerInstance server = this.serverManager.getServer(serverName);
+		this.stopServer(context.getSource(), server);
+		return Command.SINGLE_SUCCESS;
+	}
+
+	public void stopServer(CommandSource source, ServerInstance instance) {
+		if (instance == null) {
+			Chat.send(source, "Server was not found!");
+			return;
+		}
+
+		if (instance.getStatus() == UtilizationState.OFFLINE || instance.getStatus() == UtilizationState.STOPPING) {
+			Chat.send(source, "Server {0} is not online!", instance.getName());
+			return;
+		}
+
+		Chat.send(source, "Stopping server {0}...", instance.getName());
+		instance.stop().whenComplete((__, error) -> {
+			if (error != null) {
+				Chat.send(source, "Server {0} is unable to stop! {1}", instance.getName(), error.getMessage());
+			} else {
+				Chat.send(source, "Server {0} stopped", instance.getName());
+			}
+		});
 	}
 
 	public CompletableFuture<Suggestions> suggestServers(CommandContext<CommandSource> context, SuggestionsBuilder builder) {
 		String input = builder.getRemaining().toLowerCase();
-		Player player = (Player) context.getSource();
-		ServerConnection serverConnection = player.getCurrentServer().orElseGet(() -> null);
-
 		this.serverManager.getServers().stream()
-			.filter(server -> server.getStatus() == UtilizationState.RUNNING)
-			.filter(server ->
-				serverConnection != null ?
-						!serverConnection.getServerInfo().equals(server.getCurrentServer().getServerInfo()) :
-						true
-			)
+			.filter(server -> server.getStatus() == UtilizationState.RUNNING || server.getStatus() == UtilizationState.STARTING)
 			.map(server -> server.getName())
 			.filter(name -> name.toLowerCase().contains(input))
 			.forEach(builder::suggest);

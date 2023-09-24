@@ -10,19 +10,25 @@ import com.mattmalec.pterodactyl4j.PteroBuilder;
 import com.mattmalec.pterodactyl4j.application.entities.PteroApplication;
 import com.mattmalec.pterodactyl4j.client.entities.PteroClient;
 import com.velocitypowered.api.event.Subscribe;
+import com.velocitypowered.api.event.player.ServerConnectedEvent;
 import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
 import com.velocitypowered.api.plugin.Plugin;
 import com.velocitypowered.api.plugin.annotation.DataDirectory;
 import com.velocitypowered.api.proxy.ProxyServer;
+import com.velocitypowered.api.proxy.server.RegisteredServer;
 import com.velocitypowered.api.scheduler.Scheduler;
 
 import dev.imprex.testsuite.command.CommandConnect;
+import dev.imprex.testsuite.command.CommandExecute;
 import dev.imprex.testsuite.command.CommandReconnect;
+import dev.imprex.testsuite.command.CommandRestart;
+import dev.imprex.testsuite.command.CommandStop;
 import dev.imprex.testsuite.command.CommandTestsuite;
 import dev.imprex.testsuite.common.ServerVersionCache;
 import dev.imprex.testsuite.common.override.OverrideHandler;
 import dev.imprex.testsuite.config.PterodactylConfig;
 import dev.imprex.testsuite.config.TestsuiteConfig;
+import dev.imprex.testsuite.server.ServerInstance;
 import dev.imprex.testsuite.server.ServerManager;
 import dev.imprex.testsuite.template.ServerTemplateList;
 import okhttp3.OkHttpClient;
@@ -103,9 +109,26 @@ public class TestsuitePlugin {
 			.schedule();
 
 		// Register commands
-		new CommandTestsuite(this);
-		new CommandReconnect(this);
 		new CommandConnect(this);
+		new CommandExecute(this);
+		new CommandReconnect(this);
+		new CommandRestart(this);
+		new CommandStop(this);
+		new CommandTestsuite(this);
+	}
+
+	@Subscribe
+	public void onPlayerServerChange(ServerConnectedEvent event) {
+		RegisteredServer previousServer = event.getPreviousServer().orElseGet(() -> null);
+		if (previousServer != null) {
+			ServerInstance pteroServer = this.serverManager.getServer(previousServer.getServerInfo().getName());
+			if (pteroServer == null) {
+				return;
+			}
+
+			TestsuiteLogger.debug("Reset inactive time on server {1} because {0} disconnected.", event.getPlayer().getUsername(), pteroServer.getName());
+			pteroServer.resetInactiveTime();
+		}
 	}
 
 	public PteroApplication getPteroApplication() {

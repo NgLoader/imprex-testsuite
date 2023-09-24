@@ -33,12 +33,16 @@ public class CommandTestsuite {
 
 	public LiteralArgumentBuilder<CommandSource> create() {
 		return literal("testsuite")
+				.then(CommandConnect.COMMAND)
+				.then(CommandExecute.COMMAND)
+				.then(CommandReconnect.COMMAND)
+				.then(CommandRestart.COMMAND)
+				.then(CommandStop.COMMAND)
 				.then(new CommandTestsuiteCreate(this.plugin).create())
 				.then(new CommandTestsuiteDelete(this.plugin).create())
+				.then(new CommandTestsuiteList(this.plugin).create())
+				.then(new CommandTestsuiteReinstall(this.plugin).create())
 				.then(new CommandTestsuiteSetup(this.plugin).create())
-				.then(new CommandTestsuiteRestart(this.plugin).create())
-				.then(new CommandTestsuiteStart(this.plugin).create())
-				.then(new CommandTestsuiteStop(this.plugin).create())
-				.then(new CommandTestsuiteList(this.plugin).create());
+				.then(new CommandTestsuiteStart(this.plugin).create());
 	}
 }

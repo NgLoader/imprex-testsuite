@@ -19,11 +19,14 @@ import dev.imprex.testsuite.util.Chat;
 
 public class CommandReconnect {
 
+	public static LiteralArgumentBuilder<CommandSource> COMMAND;
+
 	private final ProxyServer proxy;
 
 	public CommandReconnect(TestsuitePlugin plugin) {
 		this.proxy = plugin.getProxy();
 
+		COMMAND = this.create();
 		this.register();
 	}
 
@@ -34,7 +37,7 @@ public class CommandReconnect {
 				.plugin(this)
 				.build();
 
-		BrigadierCommand command = new BrigadierCommand(this.create());
+		BrigadierCommand command = new BrigadierCommand(COMMAND);
 		commandManager.register(commandMeta, command);
 	}
 

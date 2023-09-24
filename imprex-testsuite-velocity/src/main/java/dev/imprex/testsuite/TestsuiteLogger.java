@@ -43,6 +43,10 @@ public class TestsuiteLogger {
 		logger.info(Chat.format(message, args));
 	}
 
+	public static void debug(String message, Object... args) {
+		logger.debug(Chat.format(message, args));
+	}
+
 	public static void error(Throwable throwable, String message, Object... args) {
 		logger.error(Chat.format(message, args), throwable);
 	}

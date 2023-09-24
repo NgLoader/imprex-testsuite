@@ -290,6 +290,10 @@ public class ServerInstance implements Runnable {
 		return this.server.getIdentifier();
 	}
 
+	public long getInactiveTime() {
+		return this.inactiveTime.get();
+	}
+
 	public String getName() {
 		return this.server.getName();
 	}

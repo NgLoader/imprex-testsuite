@@ -12,29 +12,53 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
+import com.velocitypowered.api.command.BrigadierCommand;
+import com.velocitypowered.api.command.CommandManager;
+import com.velocitypowered.api.command.CommandMeta;
 import com.velocitypowered.api.command.CommandSource;
+import com.velocitypowered.api.proxy.ProxyServer;
 
 import dev.imprex.testsuite.TestsuitePlugin;
 import dev.imprex.testsuite.server.ServerInstance;
 import dev.imprex.testsuite.server.ServerManager;
 import dev.imprex.testsuite.util.Chat;
 
-public class CommandTestsuiteRestart {
+public class CommandExecute {
 
+	public static LiteralArgumentBuilder<CommandSource> COMMAND;
+
+	private final ProxyServer proxy;
 	private final ServerManager serverManager;
 
-	public CommandTestsuiteRestart(TestsuitePlugin plugin) {
+	public CommandExecute(TestsuitePlugin plugin) {
+		this.proxy = plugin.getProxy();
 		this.serverManager = plugin.getServerManager();
+
+		COMMAND = this.create();
+		this.register();
+	}
+
+	public void register() {
+		CommandManager commandManager = this.proxy.getCommandManager();
+		CommandMeta commandMeta = commandManager.metaBuilder("exec")
+				.aliases("execute")
+				.plugin(this)
+				.build();
+
+		BrigadierCommand command = new BrigadierCommand(COMMAND);
+		commandManager.register(commandMeta, command);
 	}
 
 	public LiteralArgumentBuilder<CommandSource> create() {
-		return literal("restart").then(
-				argument("name", StringArgumentType.greedyString())
+		return literal("exec").then(
+				argument("name", StringArgumentType.word())
 				.suggests(this::suggestServers)
-				.executes(this::startServer));
+				.then(
+						argument("command", StringArgumentType.greedyString())
+						.executes(this::executeCommand)));
 	}
 
-	public int startServer(CommandContext<CommandSource> context) {
+	public int executeCommand(CommandContext<CommandSource> context) {
 		String serverName = context.getArgument("name", String.class);
 		ServerInstance server = this.serverManager.getServer(serverName);
 		if (server == null) {
@@ -42,12 +66,17 @@ public class CommandTestsuiteRestart {
 			return Command.SINGLE_SUCCESS;
 		}
 
-		Chat.send(context, "Restarting server {0}...", server.getName());
-		server.restart().whenComplete((__, error) -> {
+		String command = context.getArgument("command", String.class);
+		if (command.startsWith("/")) {
+			command = command.substring(1);
+		}
+
+		Chat.send(context, "Executing command on {0}...", server.getName());
+		server.executeCommand(command).whenComplete((__, error) -> {
 			if (error != null) {
-				Chat.send(context, "Server {0} is unable to restart! {1}", server.getName(), error.getMessage());
+				Chat.send(context, "Server {0} is unable to execute command! {1}", server.getName(), error.getMessage());
 			} else {
-				Chat.send(context, "Server {0} restarting", server.getName());
+				Chat.send(context, "Server {0} executed command.", server.getName());
 			}
 		});
 		return Command.SINGLE_SUCCESS;
@@ -56,7 +85,7 @@ public class CommandTestsuiteRestart {
 	public CompletableFuture<Suggestions> suggestServers(CommandContext<CommandSource> context, SuggestionsBuilder builder) {
 		String input = builder.getRemaining().toLowerCase();
 		this.serverManager.getServers().stream()
-			.filter(server -> server.getStatus() == UtilizationState.RUNNING || server.getStatus() == UtilizationState.STARTING)
+			.filter(server -> server.getStatus() == UtilizationState.RUNNING)
 			.map(server -> server.getName())
 			.filter(name -> name.toLowerCase().contains(input))
 			.forEach(builder::suggest);
