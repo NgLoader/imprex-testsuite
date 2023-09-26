@@ -17,6 +17,9 @@ import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ServerConnection;
 
 import dev.imprex.testsuite.TestsuitePlugin;
+import dev.imprex.testsuite.common.ServerType;
+import dev.imprex.testsuite.common.ServerVersion;
+import dev.imprex.testsuite.common.ServerVersionCache;
 import dev.imprex.testsuite.common.SuggestionProvider;
 import dev.imprex.testsuite.server.ServerInstance;
 import dev.imprex.testsuite.server.ServerManager;
@@ -31,15 +34,17 @@ public class CommandTestsuiteList {
 
 	private final ServerTemplateList templateList;
 	private final ServerManager serverManager;
+	private final ServerVersionCache versionCache;
 
 	public CommandTestsuiteList(TestsuitePlugin plugin) {
 		this.templateList = plugin.getTemplateList();
 		this.serverManager = plugin.getServerManager();
+		this.versionCache = plugin.getVersionCache();
 	}
 
 	public LiteralArgumentBuilder<CommandSource> create() {
 		return literal("list").then(
-				argument("name", StringArgumentType.greedyString())
+				argument("name", StringArgumentType.string())
 				.suggests(this::suggestTemplates)
 				.executes(this::listServer))
 			.executes(this::listServer);
@@ -146,5 +151,31 @@ public class CommandTestsuiteList {
 		return SuggestionProvider.suggest(builder, this.templateList.getTemplates().stream()
 				.map(template -> template.getName())
 				.toList());
+	}
+
+	public CompletableFuture<Suggestions> suggestVersions(CommandContext<CommandSource> context, SuggestionsBuilder builder) {
+		String name = context.getArgument("name", String.class);
+		ServerTemplate template = this.templateList.getTemplate(name);
+
+		ServerType serverType = ServerType.fromName(context.getArgument("type", String.class));
+		if (serverType == null) {
+			return builder.buildFuture();
+		}
+
+		String input = builder.getRemaining().toLowerCase();
+		this.versionCache.getVersionList(serverType).stream()
+			.filter(version -> version.startsWith(input) || version.contains(input))
+			.filter(version -> {
+				if (template == null) {
+					return true;
+				}
+
+				String serverName = String.format("%s-%s-%s", template.getName().toLowerCase(), serverType.name(), version);
+				return this.serverManager.getServer(serverName) == null;
+			})
+			.sorted(ServerVersion::compareVersion)
+			.forEachOrdered(builder::suggest);
+
+		return builder.buildFuture();
 	}
 }

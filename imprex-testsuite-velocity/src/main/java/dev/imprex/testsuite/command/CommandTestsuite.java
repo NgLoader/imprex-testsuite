@@ -40,6 +40,7 @@ public class CommandTestsuite {
 				.then(CommandStop.COMMAND)
 				.then(new CommandTestsuiteCreate(this.plugin).create())
 				.then(new CommandTestsuiteDelete(this.plugin).create())
+				.then(new CommandTestsuiteDisableIdleTimeout(this.plugin).create())
 				.then(new CommandTestsuiteList(this.plugin).create())
 				.then(new CommandTestsuiteReinstall(this.plugin).create())
 				.then(new CommandTestsuiteSetup(this.plugin).create())

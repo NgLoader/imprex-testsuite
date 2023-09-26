@@ -7,6 +7,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
@@ -47,6 +48,7 @@ public class ServerInstance implements Runnable {
 	private AtomicReference<PteroServerStatus> serverStatus = new AtomicReference<>(PteroServerStatus.UNKNOWN);
 
 	private AtomicLong inactiveTime = new AtomicLong(System.currentTimeMillis());
+	private AtomicBoolean idleTimeout = new AtomicBoolean(true);
 
 	public ServerInstance(ServerManager manager, ClientServer server) {
 		this.manager = manager;
@@ -95,6 +97,7 @@ public class ServerInstance implements Runnable {
 
 		UtilizationState status = this.status.get();
 		if (status == UtilizationState.RUNNING &&
+				this.idleTimeout.get() &&
 				this.proxyServer.getPlayersConnected().isEmpty()) {
 			TestsuiteLogger.broadcast("[{0}] Stopping duo to inactivity", this.getName());
 			this.stop();
@@ -245,6 +248,11 @@ public class ServerInstance implements Runnable {
 
 	public void resetInactiveTime() {
 		this.inactiveTime.getAndSet(System.currentTimeMillis() + MAX_INACTIVE_TIME);
+	}
+
+	public boolean toggleIdleTimeout() {
+		boolean state = this.idleTimeout.get();
+		return this.idleTimeout.compareAndSet(state, !state) ? !state : state;
 	}
 
 	public void close() {
