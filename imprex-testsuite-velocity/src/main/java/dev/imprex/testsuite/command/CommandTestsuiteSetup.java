@@ -41,13 +41,13 @@ public class CommandTestsuiteSetup {
 			return Command.SINGLE_SUCCESS;
 		}
 
-		Chat.send(context, "Creating server {0}...", server.getName());
+		Chat.send(context, "Setup server {0}...", server.getName());
 		server.setupServer().whenComplete((__, error) -> {
 			if (error != null) {
 				error.printStackTrace();
-				Chat.send(context, "Server {0} is unable to create! {1}", server.getName(), error.getMessage());
+				Chat.send(context, "Server {0} is unable to setup! {1}", server.getName(), error.getMessage());
 			} else {
-				Chat.send(context, "Server {0} created.", server.getName());
+				Chat.send(context, "Server {0} was setup.", server.getName());
 			}
 		});
 		return Command.SINGLE_SUCCESS;
