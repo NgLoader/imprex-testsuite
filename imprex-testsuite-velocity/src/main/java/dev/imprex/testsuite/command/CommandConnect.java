@@ -3,6 +3,7 @@ package dev.imprex.testsuite.command;
 import static dev.imprex.testsuite.util.ArgumentBuilder.argument;
 import static dev.imprex.testsuite.util.ArgumentBuilder.literal;
 
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import com.mattmalec.pterodactyl4j.UtilizationState;
@@ -56,9 +57,13 @@ public class CommandConnect {
 				.requires(sender -> sender instanceof Player)
 				.executes(command -> Chat.send(command, "Please enter a server name"))
 				.then(
-					argument("name", StringArgumentType.greedyString())
+					argument("name", StringArgumentType.string())
 					.suggests(this::suggestServers)
-					.executes(this::connectServer));
+					.executes(this::connectServer)
+					.then(
+							argument("player", StringArgumentType.string())
+							.suggests(this::suggestPlayers)
+							.executes(this::connectPlayer)));
 	}
 
 	public int connectServer(CommandContext<CommandSource> context) {
@@ -77,6 +82,62 @@ public class CommandConnect {
 		((Player) context.getSource()).createConnectionRequest(server).connectWithIndication();
 		Chat.send(context, "Connecting to \"{0}\"", server.getServerInfo().getName());
 		return Command.SINGLE_SUCCESS;
+	}
+
+	public int connectPlayer(CommandContext<CommandSource> context) {
+		String serverName = context.getArgument("name", String.class);
+		RegisteredServer server = this.proxy.getServer(serverName).orElseGet(() -> null);
+		if (server == null) {
+			Chat.send(context, "Unable to find server \"{0}\"", serverName);
+			return Command.SINGLE_SUCCESS;
+		}
+
+		String executorName = context.getSource() instanceof Player executor ? executor.getUsername() : "CONSOLE";
+		String playername = context.getArgument("player", String.class);
+		if (playername.equalsIgnoreCase("@all")) {
+			int sendCount = 0;
+			for (Player targetPlayer : this.proxy.getAllPlayers()) {
+				ServerConnection serverConnection = targetPlayer.getCurrentServer().orElseGet(() -> null);
+				if (serverConnection != null && serverConnection.getServer().equals(server)) {
+					continue;
+				}
+
+				sendCount++;
+				targetPlayer.createConnectionRequest(server).connectWithIndication();
+				Chat.send(targetPlayer, "{0} sending you to \"{1}\"", executorName, server.getServerInfo().getName());
+			}
+			Chat.send(context, "Connecting {0} players to \"{1}\"", sendCount, server.getServerInfo().getName());
+		} else {
+			Player targetPlayer = this.proxy.getPlayer(playername).orElseGet(() -> null);
+			if (targetPlayer == null) {
+				Chat.send(context, "Unable to find player {0}!", playername);
+				return Command.SINGLE_SUCCESS;
+			}
+
+			if (server.getPlayersConnected().contains(targetPlayer)) {
+				Chat.send(context, "{0} is already connected to this server!", targetPlayer.getUsername());
+				return Command.SINGLE_SUCCESS;
+			}
+
+			targetPlayer.createConnectionRequest(server).connectWithIndication();
+			Chat.send(context, "Connecting {0} to \"{1}\"", targetPlayer.getUsername(), server.getServerInfo().getName());
+			Chat.send(targetPlayer, "{0} sending you to \"{1}\"", executorName, server.getServerInfo().getName());
+		}
+		return Command.SINGLE_SUCCESS;
+	}
+
+	public CompletableFuture<Suggestions> suggestPlayers(CommandContext<CommandSource> context, SuggestionsBuilder builder) {
+		String input = builder.getRemaining().toLowerCase();
+
+		List<String> players = this.proxy.getAllPlayers().stream().map(Player::getUsername).toList();
+		players.add("@all");
+
+		for (String playername : players) {
+			if (playername.toLowerCase().contains(input)) {
+				builder.suggest(playername);
+			}
+		}
+		return builder.buildFuture();
 	}
 
 	public CompletableFuture<Suggestions> suggestServers(CommandContext<CommandSource> context, SuggestionsBuilder builder) {
