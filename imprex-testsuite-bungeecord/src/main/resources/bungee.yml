@@ -1,0 +1,16 @@
+name: Testsuite
+version: 1.0.0
+author: NgLoader
+main: dev.imprex.testsuite.TestsuitePlugin
+
+commands:
+  connect:
+    aliases: [tc,con]
+  execute:
+    aliases: [exec]
+  reconnect:
+    aliases: [rc]
+  restart:
+  stop:
+  testsuite:
+    aliases: [ts]
