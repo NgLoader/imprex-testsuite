@@ -9,14 +9,18 @@ import dev.imprex.testsuite.util.PteroServerStatus;
 import net.md_5.bungee.api.ProxyServer;
 import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.ComponentBuilder;
-import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 
 public class TestsuiteVisual implements Runnable {
 
-	private static final BaseComponent[] HEADER = new ComponentBuilder().create();
+	private static final BaseComponent[] HEADER = new ComponentBuilder()
+			.append(Chat.PREFIX)
+			.create();
 
-	private static final BaseComponent SPACER = new TextComponent(" | ");
+	private static final BaseComponent SPACER = new ComponentBuilder()
+			.append(" | ")
+			.color(Chat.Color.GRAY)
+			.create()[0];
 
 	private final ProxyServer proxy;
 	private final ServerManager serverManager;

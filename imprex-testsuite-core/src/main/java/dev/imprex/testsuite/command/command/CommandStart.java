@@ -1,43 +1,41 @@
-package dev.imprex.testsuite.command;
+package dev.imprex.testsuite.command.command;
 
 import static dev.imprex.testsuite.util.ArgumentBuilder.argument;
 import static dev.imprex.testsuite.util.ArgumentBuilder.literal;
-
-import java.util.concurrent.CompletableFuture;
 
 import com.mattmalec.pterodactyl4j.UtilizationState;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
-import com.mojang.brigadier.suggestion.Suggestions;
-import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 
 import dev.imprex.testsuite.TestsuitePlugin;
-import dev.imprex.testsuite.TestsuiteSuggestion;
+import dev.imprex.testsuite.command.suggestion.CommandSuggestion;
 import dev.imprex.testsuite.server.ServerInstance;
 import dev.imprex.testsuite.server.ServerManager;
 import dev.imprex.testsuite.util.Chat;
-import net.md_5.bungee.api.CommandSender;
+import dev.imprex.testsuite.util.TestsuiteSender;
 
-public class CommandTestsuiteStart {
+public class CommandStart {
 
 	private final ServerManager serverManager;
-	private final TestsuiteSuggestion suggestion;
+	private final CommandSuggestion suggestion;
 
-	public CommandTestsuiteStart(TestsuitePlugin plugin) {
+	public CommandStart(TestsuitePlugin plugin) {
 		this.serverManager = plugin.getServerManager();
 		this.suggestion = plugin.getCommandSuggestion();
 	}
 
-	public LiteralArgumentBuilder<CommandSender> create() {
+	public LiteralArgumentBuilder<TestsuiteSender> create() {
 		return literal("start").then(
 				argument("name", StringArgumentType.greedyString())
-				.suggests(this::suggestServers)
+				.suggests(this.suggestion.server()
+						.hasStatus(UtilizationState.OFFLINE)
+						.buildSuggest("name"))
 				.executes(this::startServer));
 	}
 
-	public int startServer(CommandContext<CommandSender> context) {
+	public int startServer(CommandContext<TestsuiteSender> context) {
 		String serverName = context.getArgument("name", String.class);
 		ServerInstance server = this.serverManager.getServer(serverName);
 		if (server == null) {
@@ -59,9 +57,5 @@ public class CommandTestsuiteStart {
 			}
 		});
 		return Command.SINGLE_SUCCESS;
-	}
-
-	public CompletableFuture<Suggestions> suggestServers(CommandContext<CommandSender> context, SuggestionsBuilder builder) {
-		return this.suggestion.suggestServers(context, builder, server -> server.getStatus() == UtilizationState.OFFLINE);
 	}
 }

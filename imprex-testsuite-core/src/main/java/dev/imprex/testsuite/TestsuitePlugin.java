@@ -1,35 +1,26 @@
 package dev.imprex.testsuite;
 
 import java.nio.file.Path;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import com.mattmalec.pterodactyl4j.PteroBuilder;
 import com.mattmalec.pterodactyl4j.application.entities.PteroApplication;
 import com.mattmalec.pterodactyl4j.client.entities.PteroClient;
 
-import dev.imprex.testsuite.command.CommandConnect;
-import dev.imprex.testsuite.command.CommandExecute;
-import dev.imprex.testsuite.command.CommandReconnect;
-import dev.imprex.testsuite.command.CommandRestart;
-import dev.imprex.testsuite.command.CommandStop;
-import dev.imprex.testsuite.command.CommandTestsuite;
-import dev.imprex.testsuite.command.brigadier.BrigadierCommandManager;
+import dev.imprex.testsuite.command.CommandRegistry;
+import dev.imprex.testsuite.command.suggestion.CommandSuggestion;
 import dev.imprex.testsuite.common.ServerVersionCache;
 import dev.imprex.testsuite.common.override.OverrideHandler;
 import dev.imprex.testsuite.config.PterodactylConfig;
 import dev.imprex.testsuite.config.TestsuiteConfig;
-import dev.imprex.testsuite.server.ServerInstance;
 import dev.imprex.testsuite.server.ServerManager;
 import dev.imprex.testsuite.template.ServerTemplateList;
-import net.md_5.bungee.api.connection.Server;
-import net.md_5.bungee.api.event.ServerConnectEvent;
-import net.md_5.bungee.api.plugin.Listener;
-import net.md_5.bungee.api.plugin.Plugin;
-import net.md_5.bungee.api.scheduler.TaskScheduler;
-import net.md_5.bungee.event.EventHandler;
+import dev.imprex.testsuite.util.TestsuitePlayer;
+import dev.imprex.testsuite.util.TestsuiteServer;
 import okhttp3.OkHttpClient;
 
-public class TestsuitePlugin extends Plugin implements Listener {
+public abstract class TestsuitePlugin {
 
 	private TestsuiteConfig config;
 
@@ -42,18 +33,17 @@ public class TestsuitePlugin extends Plugin implements Listener {
 	private ServerTemplateList templateList;
 	private ServerManager serverManager;
 
-	private TestsuiteSuggestion commandSuggestion;
-	private BrigadierCommandManager commandManager;
+	private CommandSuggestion commandSuggestion;
+	private CommandRegistry commandRegistry;
 
 	private TestsuiteVisual testsuiteVisual;
 
-	@Override
-	public void onLoad() {
+
+	public void load() {
 		TestsuiteLogger.initialize(this.getLogger());
 	}
 
-	@Override
-	public void onEnable() {
+	public void enable() {
 		// Initialize configuration
 		this.config = new TestsuiteConfig(this.getDataFolder().toPath().resolve("config.json"));
 		PterodactylConfig tylConfig = this.config.getPterodactylConfig();
@@ -87,35 +77,59 @@ public class TestsuitePlugin extends Plugin implements Listener {
 		scheduler.schedule(this, this.testsuiteVisual, 4, 4, TimeUnit.SECONDS);
 
 		// Register listener
-		this.getProxy().getPluginManager().registerListener(this, this);
+//		this.getProxy().getPluginManager().registerListener(this, this);
 
 		// Register commands
-		this.commandSuggestion = new TestsuiteSuggestion(this);
-		this.commandManager = new BrigadierCommandManager(this);
-		this.commandManager.register(new CommandConnect(this).brigadierCommand());
-		this.commandManager.register(new CommandExecute(this).brigadierCommand());
-		this.commandManager.register(new CommandReconnect(this).brigadierCommand());
-		this.commandManager.register(new CommandRestart(this).brigadierCommand());
-		this.commandManager.register(new CommandStop(this).brigadierCommand());
-		this.commandManager.register(new CommandTestsuite(this).brigadierCommand());
+		this.commandSuggestion = new CommandSuggestion(this);
+		this.commandRegistry = new CommandRegistry(this);
+//		this.commandManager = new BrigadierCommandManager(this);
+//		this.commandManager.register(new CommandConnect(this).brigadierCommand());
+//		this.commandManager.register(new CommandExecute(this).brigadierCommand());
+//		this.commandManager.register(new CommandReconnect(this).brigadierCommand());
+//		this.commandManager.register(new CommandRestart(this).brigadierCommand());
+//		this.commandManager.register(new CommandStop(this).brigadierCommand());
+//		this.commandManager.register(new CommandTestsuite(this).brigadierCommand());
 	}
 
-	@Override
-	public void onDisable() {
+	public void disable() {
 	}
 
-	@EventHandler
-	public void onPlayerServerChange(ServerConnectEvent event) {
-		Server server = event.getPlayer().getServer();
-		if (server != null) {
-			ServerInstance pteroServer = this.serverManager.getServer(server.getInfo().getName());
-			if (pteroServer == null) {
-				return;
-			}
+//	@EventHandler
+//	public void onPlayerServerChange(ServerConnectEvent event) {
+//		Server server = event.getPlayer().getServer();
+//		if (server != null) {
+//			ServerInstance pteroServer = this.serverManager.getServer(server.getInfo().getName());
+//			if (pteroServer == null) {
+//				return;
+//			}
+//
+//			TestsuiteLogger.debug("Reset inactive time on server {1} because {0} disconnected.", event.getPlayer().getName(), pteroServer.getName());
+//			pteroServer.resetInactiveTime();
+//		}
+//	}
 
-			TestsuiteLogger.debug("Reset inactive time on server {1} because {0} disconnected.", event.getPlayer().getName(), pteroServer.getName());
-			pteroServer.resetInactiveTime();
-		}
+	public TestsuitePlayer getPlayer(String name) {
+		return null; // TODO
+	}
+
+	public List<TestsuitePlayer> getPlayers() {
+		return null; // TODO
+	}
+
+	public TestsuiteServer getServer(String name) {
+		return null; // TODO
+	}
+
+	public TestsuiteServer createServer(String name, String ip, int port) {
+		return null; // TODO
+	}
+
+	public boolean deleteServer(String name) {
+		return false; // TODO
+	}
+
+	public List<TestsuiteServer> getServers() {
+		return null; // TODO
 	}
 
 	public PteroApplication getPteroApplication() {
@@ -146,12 +160,12 @@ public class TestsuitePlugin extends Plugin implements Listener {
 		return this.testsuiteVisual;
 	}
 
-	public TestsuiteSuggestion getCommandSuggestion() {
+	public CommandSuggestion getCommandSuggestion() {
 		return this.commandSuggestion;
 	}
 
-	public BrigadierCommandManager getCommandManager() {
-		return this.commandManager;
+	public CommandRegistry getCommandRegistry() {
+		return this.commandRegistry;
 	}
 
 	public TestsuiteConfig getConfig() {

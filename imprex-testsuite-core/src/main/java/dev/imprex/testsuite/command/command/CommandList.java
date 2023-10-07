@@ -1,4 +1,4 @@
-package dev.imprex.testsuite.command;
+package dev.imprex.testsuite.command.command;
 
 import static dev.imprex.testsuite.util.ArgumentBuilder.argument;
 import static dev.imprex.testsuite.util.ArgumentBuilder.literal;
@@ -20,21 +20,21 @@ import dev.imprex.testsuite.common.SuggestionProvider;
 import dev.imprex.testsuite.server.ServerManager;
 import dev.imprex.testsuite.template.ServerTemplate;
 import dev.imprex.testsuite.template.ServerTemplateList;
-import net.md_5.bungee.api.CommandSender;
+import dev.imprex.testsuite.util.TestsuiteSender;
 
-public class CommandTestsuiteList {
+public class CommandList {
 
 	private final ServerTemplateList templateList;
 	private final ServerManager serverManager;
 	private final ServerVersionCache versionCache;
 
-	public CommandTestsuiteList(TestsuitePlugin plugin) {
+	public CommandList(TestsuitePlugin plugin) {
 		this.templateList = plugin.getTemplateList();
 		this.serverManager = plugin.getServerManager();
 		this.versionCache = plugin.getVersionCache();
 	}
 
-	public LiteralArgumentBuilder<CommandSender> create() {
+	public LiteralArgumentBuilder<TestsuiteSender> create() {
 		return literal("list").then(
 				argument("name", StringArgumentType.string())
 				.suggests(this::suggestTemplates)
@@ -42,7 +42,7 @@ public class CommandTestsuiteList {
 			.executes(this::listServer);
 	}
 
-	public int listServer(CommandContext<CommandSender> context) {
+	public int listServer(CommandContext<TestsuiteSender> context) {
 		
 		
 //		ServerTemplate template = null;
@@ -141,13 +141,13 @@ public class CommandTestsuiteList {
 		return (int) ((time - System.currentTimeMillis()) / 1000);
 	}
 
-	public CompletableFuture<Suggestions> suggestTemplates(CommandContext<CommandSender> context, SuggestionsBuilder builder) {
+	public CompletableFuture<Suggestions> suggestTemplates(CommandContext<TestsuiteSender> context, SuggestionsBuilder builder) {
 		return SuggestionProvider.suggest(builder, this.templateList.getTemplates().stream()
 				.map(template -> template.getName())
 				.toList());
 	}
 
-	public CompletableFuture<Suggestions> suggestVersions(CommandContext<CommandSender> context, SuggestionsBuilder builder) {
+	public CompletableFuture<Suggestions> suggestVersions(CommandContext<TestsuiteSender> context, SuggestionsBuilder builder) {
 		String name = context.getArgument("name", String.class);
 		ServerTemplate template = this.templateList.getTemplate(name);
 
