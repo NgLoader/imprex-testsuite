@@ -20,12 +20,12 @@ import com.mattmalec.pterodactyl4j.entities.Allocation;
 
 import dev.imprex.testsuite.TestsuiteLogger;
 import dev.imprex.testsuite.TestsuitePlugin;
+import dev.imprex.testsuite.api.TestsuiteServer;
 import dev.imprex.testsuite.template.ServerTemplate;
 import dev.imprex.testsuite.template.ServerTemplateList;
 import dev.imprex.testsuite.util.PteroServerStatus;
 import dev.imprex.testsuite.util.PteroUtil;
-import dev.imprex.testsuite.util.PteroUtilization;
-import dev.imprex.testsuite.util.TestsuiteServer;
+import dev.imprex.testsuite.util.EmptyUtilization;
 
 public class ServerInstance implements Runnable {
 
@@ -40,7 +40,7 @@ public class ServerInstance implements Runnable {
 	private Lock webSocketLock = new ReentrantLock();
 
 	private ServerTemplate template;
-	private AtomicReference<Utilization> stats = new AtomicReference<>(new PteroUtilization());
+	private AtomicReference<Utilization> stats = new AtomicReference<>(new EmptyUtilization());
 	private AtomicReference<UtilizationState> status = new AtomicReference<>(UtilizationState.OFFLINE);
 	private AtomicReference<PteroServerStatus> serverStatus = new AtomicReference<>(PteroServerStatus.UNKNOWN);
 

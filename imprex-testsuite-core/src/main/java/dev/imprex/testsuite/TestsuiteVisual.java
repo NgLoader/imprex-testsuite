@@ -2,11 +2,11 @@ package dev.imprex.testsuite;
 
 import com.mattmalec.pterodactyl4j.UtilizationState;
 
+import dev.imprex.testsuite.api.TestsuitePlayer;
 import dev.imprex.testsuite.server.ServerInstance;
 import dev.imprex.testsuite.server.ServerManager;
 import dev.imprex.testsuite.util.Chat;
 import dev.imprex.testsuite.util.PteroServerStatus;
-import dev.imprex.testsuite.util.TestsuitePlayer;
 import net.kyori.adventure.text.Component;
 
 public class TestsuiteVisual implements Runnable {

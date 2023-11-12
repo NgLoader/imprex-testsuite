@@ -1,16 +1,14 @@
 name: Testsuite
 version: 1.0.0
 author: NgLoader
-main: dev.imprex.testsuite.TestsuitePlugin
+main: dev.imprex.testsuite.bungeecord.BungeecordPlugin
 
 commands:
-  connect:
-    aliases: [tc,con]
-  execute:
-    aliases: [exec]
-  reconnect:
-    aliases: [rc]
-  restart:
-  stop:
   testsuite:
-    aliases: [ts]
+    aliases: [ts, tests, tsuite]
+  connect:
+    aliases: [con, tc]
+  exec:
+  reconnect:
+    aliases: [rc, rconnect]
+  stop:

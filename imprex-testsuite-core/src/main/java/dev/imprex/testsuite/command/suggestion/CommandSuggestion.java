@@ -2,11 +2,12 @@
 package dev.imprex.testsuite.command.suggestion;
 
 import dev.imprex.testsuite.TestsuitePlugin;
-import dev.imprex.testsuite.common.ServerType;
-import dev.imprex.testsuite.common.ServerVersionCache;
+import dev.imprex.testsuite.api.TestsuitePlayer;
 import dev.imprex.testsuite.server.ServerManager;
+import dev.imprex.testsuite.server.meta.ServerType;
+import dev.imprex.testsuite.server.meta.ServerVersionCache;
+import dev.imprex.testsuite.template.ServerTemplate;
 import dev.imprex.testsuite.template.ServerTemplateList;
-import dev.imprex.testsuite.util.TestsuitePlayer;
 
 public class CommandSuggestion {
 
@@ -25,8 +26,8 @@ public class CommandSuggestion {
 		return new SuggestionBuilder<>(() -> this.versionCache.getVersionList(type).stream());
 	}
 
-	public TemplateSuggestionBuilder template() {
-		return new TemplateSuggestionBuilder(() -> this.templateList.getTemplates().stream());
+	public SuggestionBuilder<ServerTemplate, ServerTemplate> template() {
+		return new SuggestionBuilder<>(() -> this.templateList.getTemplates().stream());
 	}
 
 	public ServerSuggestionBuilder server() {

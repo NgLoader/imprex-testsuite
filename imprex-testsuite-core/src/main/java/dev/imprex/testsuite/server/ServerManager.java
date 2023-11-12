@@ -26,8 +26,8 @@ import com.mattmalec.pterodactyl4j.client.entities.PteroClient;
 
 import dev.imprex.testsuite.TestsuiteLogger;
 import dev.imprex.testsuite.TestsuitePlugin;
-import dev.imprex.testsuite.common.ServerType;
 import dev.imprex.testsuite.config.ServerConfig;
+import dev.imprex.testsuite.server.meta.ServerType;
 import dev.imprex.testsuite.template.ServerTemplate;
 import dev.imprex.testsuite.util.PteroServerStatus;
 

@@ -5,7 +5,7 @@ import java.util.Set;
 
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 
-import dev.imprex.testsuite.util.TestsuiteSender;
+import dev.imprex.testsuite.api.TestsuiteSender;
 
 public class CommandBuilder {
 
@@ -35,7 +35,7 @@ public class CommandBuilder {
 		return this;
 	}
 
-	public CommandRegistration build() {
-		return new CommandRegistration(this.literal, this.isRoot, this.aliases);
+	public CommandMeta build() {
+		return new CommandMeta(this.literal, this.isRoot, this.aliases);
 	}
 }

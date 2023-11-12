@@ -3,6 +3,7 @@ package dev.imprex.testsuite.util;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.context.CommandContext;
 
+import dev.imprex.testsuite.api.TestsuiteSender;
 import dev.imprex.testsuite.server.ServerInstance;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextColor;

@@ -1,7 +1,7 @@
 package dev.imprex.testsuite.command.command;
 
-import static dev.imprex.testsuite.util.ArgumentBuilder.argument;
-import static dev.imprex.testsuite.util.ArgumentBuilder.literal;
+import static dev.imprex.testsuite.command.ArgumentBuilder.argument;
+import static dev.imprex.testsuite.command.ArgumentBuilder.literal;
 
 import com.mattmalec.pterodactyl4j.UtilizationState;
 import com.mojang.brigadier.Command;
@@ -10,13 +10,13 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 
 import dev.imprex.testsuite.TestsuitePlugin;
+import dev.imprex.testsuite.api.TestsuitePlayer;
+import dev.imprex.testsuite.api.TestsuiteSender;
+import dev.imprex.testsuite.api.TestsuiteServer;
 import dev.imprex.testsuite.command.suggestion.CommandSuggestion;
 import dev.imprex.testsuite.server.ServerInstance;
 import dev.imprex.testsuite.server.ServerManager;
 import dev.imprex.testsuite.util.Chat;
-import dev.imprex.testsuite.util.TestsuitePlayer;
-import dev.imprex.testsuite.util.TestsuiteSender;
-import dev.imprex.testsuite.util.TestsuiteServer;
 
 public class CommandStop {
 

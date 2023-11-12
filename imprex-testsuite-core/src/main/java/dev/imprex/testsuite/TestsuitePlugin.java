@@ -9,19 +9,20 @@ import com.mattmalec.pterodactyl4j.PteroBuilder;
 import com.mattmalec.pterodactyl4j.application.entities.PteroApplication;
 import com.mattmalec.pterodactyl4j.client.entities.PteroClient;
 
+import dev.imprex.testsuite.api.TestsuiteApi;
+import dev.imprex.testsuite.api.TestsuitePlayer;
+import dev.imprex.testsuite.api.TestsuiteServer;
 import dev.imprex.testsuite.command.CommandRegistry;
 import dev.imprex.testsuite.command.suggestion.CommandSuggestion;
-import dev.imprex.testsuite.common.ServerVersionCache;
-import dev.imprex.testsuite.common.override.OverrideHandler;
 import dev.imprex.testsuite.config.PterodactylConfig;
 import dev.imprex.testsuite.config.TestsuiteConfig;
+import dev.imprex.testsuite.override.OverrideHandler;
 import dev.imprex.testsuite.server.ServerManager;
+import dev.imprex.testsuite.server.meta.ServerVersionCache;
 import dev.imprex.testsuite.template.ServerTemplateList;
-import dev.imprex.testsuite.util.TestsuitePlayer;
-import dev.imprex.testsuite.util.TestsuiteServer;
 import okhttp3.OkHttpClient;
 
-public abstract class TestsuitePlugin {
+public class TestsuitePlugin implements TestsuiteApi {
 
 	private Path dataFolder;
 
@@ -41,12 +42,16 @@ public abstract class TestsuitePlugin {
 
 	private TestsuiteVisual testsuiteVisual;
 
+	private TestsuiteApi api;
+
 	public void load(Logger logger, Path dataFolder) {
 		TestsuiteLogger.initialize(this, logger);
 		this.dataFolder = dataFolder;
 	}
 
-	public void enable() {
+	public void enable(TestsuiteApi api) {
+		this.api = api;
+
 		// Initialize configuration
 		this.config = new TestsuiteConfig(this.getPluginFolder().resolve("config.json"));
 		PterodactylConfig tylConfig = this.config.getPterodactylConfig();
@@ -86,19 +91,40 @@ public abstract class TestsuitePlugin {
 	public void disable() {
 	}
 
-	public abstract void scheduleTask(Runnable runnable, int delay, int repeat, TimeUnit unit);
+	@Override
+	public void scheduleTask(Runnable runnable, int delay, int repeat, TimeUnit unit) {
+		this.api.scheduleTask(runnable, delay, repeat, unit);
+	}
 
-	public abstract TestsuitePlayer getPlayer(String name);
+	@Override
+	public TestsuitePlayer getPlayer(String name) {
+		return this.api.getPlayer(name);
+	}
 
-	public abstract List<TestsuitePlayer> getPlayers();
+	@Override
+	public List<TestsuitePlayer> getPlayers() {
+		return this.api.getPlayers();
+	}
 
-	public abstract TestsuiteServer getServer(String name);
+	@Override
+	public TestsuiteServer getServer(String name) {
+		return this.api.getServer(name);
+	}
 
-	public abstract TestsuiteServer createServer(String name, String ip, int port);
+	@Override
+	public TestsuiteServer createServer(String name, String ip, int port) {
+		return this.api.createServer(name, ip, port);
+	}
 
-	public abstract boolean deleteServer(String name);
+	@Override
+	public boolean deleteServer(String name) {
+		return this.api.deleteServer(name);
+	}
 
-	public abstract List<TestsuiteServer> getServers();
+	@Override
+	public List<TestsuiteServer> getServers() {
+		return this.api.getServers();
+	}
 
 	public PteroApplication getPteroApplication() {
 		return this.pteroApplication;

@@ -14,8 +14,18 @@
 	<dependencies>
 		<dependency>
 			<groupId>dev.imprex</groupId>
-			<artifactId>imprex-testsuite-common</artifactId>
+			<artifactId>imprex-testsuite-core</artifactId>
 			<version>${revision}</version>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>net.kyori</groupId>
+			<artifactId>adventure-api</artifactId>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>net.kyori</groupId>
+			<artifactId>adventure-platform-bungeecord</artifactId>
 			<scope>compile</scope>
 		</dependency>
 		<dependency>
@@ -27,16 +37,6 @@
 			<groupId>net.md-5</groupId>
 			<artifactId>bungeecord-api</artifactId>
 			<type>javadoc</type>
-		</dependency>
-		<dependency>
-			<groupId>com.mattmalec</groupId>
-			<artifactId>Pterodactyl4J</artifactId>
-			<scope>compile</scope>
-		</dependency>
-		<dependency>
-			<groupId>com.squareup.okhttp3</groupId>
-			<artifactId>okhttp</artifactId>
-			<scope>compile</scope>
 		</dependency>
 	</dependencies>
 </project>

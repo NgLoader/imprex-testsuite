@@ -9,9 +9,9 @@ import java.util.stream.Stream;
 import com.mattmalec.pterodactyl4j.UtilizationState;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 
+import dev.imprex.testsuite.api.TestsuiteSender;
+import dev.imprex.testsuite.command.ArgumentBuilder;
 import dev.imprex.testsuite.server.ServerInstance;
-import dev.imprex.testsuite.util.ArgumentBuilder;
-import dev.imprex.testsuite.util.TestsuiteSender;
 
 public class ServerSuggestionBuilder extends SuggestionBuilder<ServerInstance, ServerInstance> {
 

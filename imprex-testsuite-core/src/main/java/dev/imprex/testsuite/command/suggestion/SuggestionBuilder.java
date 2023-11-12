@@ -11,8 +11,8 @@ import java.util.stream.StreamSupport;
 
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 
-import dev.imprex.testsuite.util.ArgumentBuilder;
-import dev.imprex.testsuite.util.TestsuiteSender;
+import dev.imprex.testsuite.api.TestsuiteSender;
+import dev.imprex.testsuite.command.ArgumentBuilder;
 
 @SuppressWarnings({ "rawtypes", "unchecked" })
 public class SuggestionBuilder<TRoot, TOut> {

@@ -1,7 +1,7 @@
 package dev.imprex.testsuite.command.command;
 
-import static dev.imprex.testsuite.util.ArgumentBuilder.argument;
-import static dev.imprex.testsuite.util.ArgumentBuilder.literal;
+import static dev.imprex.testsuite.command.ArgumentBuilder.argument;
+import static dev.imprex.testsuite.command.ArgumentBuilder.literal;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -14,15 +14,15 @@ import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 
 import dev.imprex.testsuite.TestsuitePlugin;
+import dev.imprex.testsuite.api.TestsuiteSender;
+import dev.imprex.testsuite.command.SuggestionProvider;
 import dev.imprex.testsuite.command.suggestion.CommandSuggestion;
-import dev.imprex.testsuite.common.ServerType;
-import dev.imprex.testsuite.common.ServerVersionCache;
-import dev.imprex.testsuite.common.SuggestionProvider;
 import dev.imprex.testsuite.server.ServerManager;
+import dev.imprex.testsuite.server.meta.ServerType;
+import dev.imprex.testsuite.server.meta.ServerVersionCache;
 import dev.imprex.testsuite.template.ServerTemplate;
 import dev.imprex.testsuite.template.ServerTemplateList;
 import dev.imprex.testsuite.util.Chat;
-import dev.imprex.testsuite.util.TestsuiteSender;
 
 public class CommandCreate {
 
@@ -41,7 +41,9 @@ public class CommandCreate {
 	public LiteralArgumentBuilder<TestsuiteSender> create() {
 		return literal("create").then(
 				argument("name", StringArgumentType.word())
-				.suggests(this.suggestion.template().buildSuggest("name"))
+				.suggests(this.suggestion.template()
+						.map(ServerTemplate::getName)
+						.buildSuggest("name"))
 				.then(
 						argument("type", StringArgumentType.word())
 						.suggests((future, builder) -> SuggestionProvider.suggest(builder, ServerType.TYPE_NAMES))

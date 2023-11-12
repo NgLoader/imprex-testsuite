@@ -13,12 +13,6 @@
 
 	<dependencies>
 		<dependency>
-			<groupId>dev.imprex</groupId>
-			<artifactId>imprex-testsuite-common</artifactId>
-			<version>${revision}</version>
-			<scope>compile</scope>
-		</dependency>
-		<dependency>
 			<groupId>net.kyori</groupId>
 			<artifactId>adventure-api</artifactId>
 		</dependency>
@@ -31,10 +25,6 @@
 			<artifactId>brigadier</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>org.slf4j</groupId>
-			<artifactId>slf4j-api</artifactId>
-		</dependency>
-		<dependency>
 			<groupId>com.mattmalec</groupId>
 			<artifactId>Pterodactyl4J</artifactId>
 			<scope>compile</scope>
@@ -42,6 +32,16 @@
 		<dependency>
 			<groupId>com.squareup.okhttp3</groupId>
 			<artifactId>okhttp</artifactId>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.google.code.gson</groupId>
+			<artifactId>gson</artifactId>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.yaml</groupId>
+			<artifactId>snakeyaml</artifactId>
 			<scope>compile</scope>
 		</dependency>
 	</dependencies>
