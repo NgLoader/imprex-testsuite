@@ -32,7 +32,7 @@ public class CommandDisableIdleTimeout {
 						argument("name", StringArgumentType.greedyString())
 						.suggests(this.suggestion.server()
 								.hasStatus(UtilizationState.STARTING, UtilizationState.RUNNING)
-								.buildSuggest())
+								.buildSuggest("name"))
 						.executes(this::toggleIdleServer));
 	}
 

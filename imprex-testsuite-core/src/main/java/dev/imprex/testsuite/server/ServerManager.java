@@ -71,76 +71,80 @@ public class ServerManager implements Runnable {
 		this.lastUpdate.getAndSet(System.currentTimeMillis() + UPDATE_TIME);
 
 		this.pteroClient.retrieveServers().all().executeAsync((serverList) -> {
-			for (ClientServer server : serverList) {
-				if (!ServerType.isValid(server.getEgg().getName())) {
-					continue;
-				}
-				
-				String identifier = server.getIdentifier();
-				ServerInstance instance = this.serverInstances.get(identifier);
-
-				if (instance == null) {
-					instance = new ServerInstance(this, server);
-					this.serverInstances.put(identifier, instance);
-
-					TestsuiteLogger.broadcast("Detected server instance \"{0}\"", instance.getName());
-				} else {
-					instance.updateStats(server.retrieveUtilization().execute());
-				}
-
-				if (server.isSuspended()) {
-					instance.updateServerStatus(PteroServerStatus.SUSPENDED);
-					continue;
-				} else if (server.isInstalling()) {
-					instance.updateServerStatus(PteroServerStatus.INSTALLING);
-					continue;
-				} else if (server.isTransferring()) {
-					instance.updateServerStatus(PteroServerStatus.TRANSFERING);
-					continue;
-				}
-
-				instance.updateServerStatus(PteroServerStatus.READY);
-
-				if (this.serverInstallation.contains(identifier)) {
-					if (server.isInstalling() || server.isSuspended() || server.isTransferring()) {
-						continue;
-					}
-
-					this.serverInstallation.remove(identifier);
-					if (instance.getTemplate() == null) {
-						TestsuiteLogger.broadcast("[{0}] Installing skipped. No template!", instance.getName());
-						continue;
-					}
-
-					TestsuiteLogger.broadcast("[{0}] Installing template...", instance.getName());
-					instance.setupServer().whenComplete((__, error) -> {
-						if (error != null) {
-							TestsuiteLogger.error(error, "[{0}] Install failed!", server.getName());
-							TestsuiteLogger.broadcast("[{0}] Install failed!", server.getName());
-						} else {
-							TestsuiteLogger.broadcast("[{0}] Installed.", server.getName());
-						}
-					});
-				}
-			}
-
-			for (Iterator<ServerInstance> iterator = this.serverInstances.values().iterator(); iterator.hasNext(); ) {
-				ServerInstance instance = iterator.next();
-				boolean found = false;
+			try {
 				for (ClientServer server : serverList) {
-					if (server.getIdentifier().equals(instance.getIdentifier())) {
-						found = true;
-						break;
+					if (!ServerType.isValid(server.getEgg().getName())) {
+						continue;
+					}
+					
+					String identifier = server.getIdentifier();
+					ServerInstance instance = this.serverInstances.get(identifier);
+
+					if (instance == null) {
+						instance = new ServerInstance(this, server);
+						this.serverInstances.put(identifier, instance);
+
+						TestsuiteLogger.broadcast("Detected server instance \"{0}\"", instance.getName());
+					} else {
+						instance.updateStats(server.retrieveUtilization().execute());
+					}
+
+					if (server.isSuspended()) {
+						instance.updateServerStatus(PteroServerStatus.SUSPENDED);
+						continue;
+					} else if (server.isInstalling()) {
+						instance.updateServerStatus(PteroServerStatus.INSTALLING);
+						continue;
+					} else if (server.isTransferring()) {
+						instance.updateServerStatus(PteroServerStatus.TRANSFERING);
+						continue;
+					}
+
+					instance.updateServerStatus(PteroServerStatus.READY);
+
+					if (this.serverInstallation.contains(identifier)) {
+						if (server.isInstalling() || server.isSuspended() || server.isTransferring()) {
+							continue;
+						}
+
+						this.serverInstallation.remove(identifier);
+						if (instance.getTemplate() == null) {
+							TestsuiteLogger.broadcast("[{0}] Installing skipped. No template!", instance.getName());
+							continue;
+						}
+
+						TestsuiteLogger.broadcast("[{0}] Installing template...", instance.getName());
+						instance.setupServer().whenComplete((__, error) -> {
+							if (error != null) {
+								TestsuiteLogger.error(error, "[{0}] Install failed!", server.getName());
+								TestsuiteLogger.broadcast("[{0}] Install failed!", server.getName());
+							} else {
+								TestsuiteLogger.broadcast("[{0}] Installed.", server.getName());
+							}
+						});
 					}
 				}
 
-				if (!found) {
-					try {
-						instance.close();
-					} finally {
-						iterator.remove();
+				for (Iterator<ServerInstance> iterator = this.serverInstances.values().iterator(); iterator.hasNext(); ) {
+					ServerInstance instance = iterator.next();
+					boolean found = false;
+					for (ClientServer server : serverList) {
+						if (server.getIdentifier().equals(instance.getIdentifier())) {
+							found = true;
+							break;
+						}
+					}
+
+					if (!found) {
+						try {
+							instance.close();
+						} finally {
+							iterator.remove();
+						}
 					}
 				}
+			} catch (Exception e) {
+				e.printStackTrace();
 			}
 		}, (error) -> {
 			error.printStackTrace();

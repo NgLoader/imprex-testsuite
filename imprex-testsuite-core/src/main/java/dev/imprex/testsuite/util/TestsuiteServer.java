@@ -14,6 +14,7 @@ public interface TestsuiteServer {
 	String getName();
 
 	String getAddress();
+
 	int getPort();
 
 	List<TestsuitePlayer> getPlayers();

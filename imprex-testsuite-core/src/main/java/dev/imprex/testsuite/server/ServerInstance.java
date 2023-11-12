@@ -157,7 +157,12 @@ public class ServerInstance implements Runnable {
 		this.webSocketLock.lock();
 		try {
 			if (this.webSocketManager != null) {
-				this.webSocketManager.shutdown();
+				try {
+					this.webSocketManager.shutdown();
+				} catch (IllegalStateException e) {
+					// Ignore already shutdown message
+				}
+
 				this.webSocketManager = null;
 				TestsuiteLogger.broadcast("[{0}] Disonnected from websocket.", this.getName());
 			}

@@ -9,9 +9,9 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 
+import dev.imprex.testsuite.util.ArgumentBuilder;
 import dev.imprex.testsuite.util.TestsuiteSender;
 
 @SuppressWarnings({ "rawtypes", "unchecked" })
@@ -72,7 +72,7 @@ public class SuggestionBuilder<TRoot, TOut> {
 		final Function<Stream<TRoot>, Stream<String>> transformation = this.map(Objects::toString).buildStream();
 
 		return (context, builder) -> {
-			String input = StringArgumentType.getString(context, fieldName).toLowerCase();
+			String input = ArgumentBuilder.getSafeStringArgument(context, fieldName);
 
 			transformation.apply(this.supplier.get())
 				.map(Objects::toString)

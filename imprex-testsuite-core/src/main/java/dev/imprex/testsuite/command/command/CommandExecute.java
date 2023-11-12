@@ -27,11 +27,11 @@ public class CommandExecute {
 	}
 
 	public LiteralArgumentBuilder<TestsuiteSender> create() {
-		return literal("exec").then(
+		return literal("execute").then(
 				argument("name", StringArgumentType.word())
 				.suggests(this.suggestion.server()
 						.hasStatus(UtilizationState.RUNNING)
-						.buildSuggest())
+						.buildSuggest("name"))
 				.then(
 						argument("command", StringArgumentType.greedyString())
 						.executes(this::executeCommand)));

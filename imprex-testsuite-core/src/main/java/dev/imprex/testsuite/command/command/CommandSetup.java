@@ -3,16 +3,13 @@ package dev.imprex.testsuite.command.command;
 import static dev.imprex.testsuite.util.ArgumentBuilder.argument;
 import static dev.imprex.testsuite.util.ArgumentBuilder.literal;
 
-import java.util.concurrent.CompletableFuture;
-
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
-import com.mojang.brigadier.suggestion.Suggestions;
-import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 
 import dev.imprex.testsuite.TestsuitePlugin;
+import dev.imprex.testsuite.command.suggestion.CommandSuggestion;
 import dev.imprex.testsuite.server.ServerInstance;
 import dev.imprex.testsuite.server.ServerManager;
 import dev.imprex.testsuite.util.Chat;
@@ -21,15 +18,18 @@ import dev.imprex.testsuite.util.TestsuiteSender;
 public class CommandSetup {
 
 	private final ServerManager serverManager;
+	private final CommandSuggestion suggestion;
 
 	public CommandSetup(TestsuitePlugin plugin) {
 		this.serverManager = plugin.getServerManager();
+		this.suggestion = plugin.getCommandSuggestion();
 	}
 
 	public LiteralArgumentBuilder<TestsuiteSender> create() {
 		return literal("setup").then(
 				argument("name", StringArgumentType.greedyString())
-				.suggests(this::suggestServers)
+				.suggests(this.suggestion.server()
+						.buildSuggest("name"))
 				.executes(this::setupServer));
 	}
 
@@ -51,14 +51,5 @@ public class CommandSetup {
 			}
 		});
 		return Command.SINGLE_SUCCESS;
-	}
-
-	public CompletableFuture<Suggestions> suggestServers(CommandContext<TestsuiteSender> context, SuggestionsBuilder builder) {
-		String input = builder.getRemaining().toLowerCase();
-		this.serverManager.getServers().stream()
-			.map(server -> server.getName())
-			.filter(name -> name.toLowerCase().contains(input))
-			.forEach(builder::suggest);
-		return builder.buildFuture();
 	}
 }

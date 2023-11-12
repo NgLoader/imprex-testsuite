@@ -1,32 +1,25 @@
 package dev.imprex.testsuite.command.suggestion;
 
-import java.util.EnumSet;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import com.mattmalec.pterodactyl4j.UtilizationState;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 
-import dev.imprex.testsuite.server.ServerInstance;
+import dev.imprex.testsuite.template.ServerTemplate;
 import dev.imprex.testsuite.util.ArgumentBuilder;
 import dev.imprex.testsuite.util.TestsuiteSender;
 
-public class ServerSuggestionBuilder extends SuggestionBuilder<ServerInstance, ServerInstance> {
+public class TemplateSuggestionBuilder extends SuggestionBuilder<ServerTemplate, ServerTemplate> {
 
-	public ServerSuggestionBuilder(Supplier<Stream<ServerInstance>> supplier) {
+	public TemplateSuggestionBuilder(Supplier<Stream<ServerTemplate>> supplier) {
 		super(supplier);
-	}
-
-	public ServerSuggestionBuilder hasStatus(UtilizationState first, UtilizationState... status) {
-		EnumSet<UtilizationState> statusSet = EnumSet.of(first, status);
-		return (ServerSuggestionBuilder) this.filter(server -> statusSet.contains(server.getStatus()));
 	}
 
 	@Override
 	public SuggestionProvider<TestsuiteSender> buildSuggest() {
-		final Function<Stream<ServerInstance>, Stream<String>> transformation = this.map(ServerInstance::getName)
+		final Function<Stream<ServerTemplate>, Stream<String>> transformation = this.map(ServerTemplate::getName)
 				.buildStream();
 
 		return (context, builder) -> {
@@ -39,7 +32,7 @@ public class ServerSuggestionBuilder extends SuggestionBuilder<ServerInstance, S
 
 	@Override
 	public SuggestionProvider<TestsuiteSender> buildSuggest(String fieldName) {
-		final Function<Stream<ServerInstance>, Stream<String>> transformation = this.map(ServerInstance::getName)
+		final Function<Stream<ServerTemplate>, Stream<String>> transformation = this.map(ServerTemplate::getName)
 				.buildStream();
 
 		return (context, builder) -> {

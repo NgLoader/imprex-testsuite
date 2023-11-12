@@ -3,6 +3,7 @@ package dev.imprex.testsuite;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
 
 import com.mattmalec.pterodactyl4j.PteroBuilder;
 import com.mattmalec.pterodactyl4j.application.entities.PteroApplication;
@@ -22,6 +23,8 @@ import okhttp3.OkHttpClient;
 
 public abstract class TestsuitePlugin {
 
+	private Path dataFolder;
+
 	private TestsuiteConfig config;
 
 	private PteroApplication pteroApplication;
@@ -38,14 +41,14 @@ public abstract class TestsuitePlugin {
 
 	private TestsuiteVisual testsuiteVisual;
 
-
-	public void load() {
-		TestsuiteLogger.initialize(this.getLogger());
+	public void load(Logger logger, Path dataFolder) {
+		TestsuiteLogger.initialize(this, logger);
+		this.dataFolder = dataFolder;
 	}
 
 	public void enable() {
 		// Initialize configuration
-		this.config = new TestsuiteConfig(this.getDataFolder().toPath().resolve("config.json"));
+		this.config = new TestsuiteConfig(this.getPluginFolder().resolve("config.json"));
 		PterodactylConfig tylConfig = this.config.getPterodactylConfig();
 
 		if (!tylConfig.valid()) {
@@ -64,73 +67,38 @@ public abstract class TestsuitePlugin {
 		// Register systems
 		this.overrideHandler = new OverrideHandler();
 
-		this.versionCache = new ServerVersionCache(this.getFolder().resolve("version_cache.json"));
-		this.templateList = new ServerTemplateList(this, this.getFolder().resolve("template"));
+		this.versionCache = new ServerVersionCache(this.getPluginFolder().resolve("version_cache.json"));
+		this.templateList = new ServerTemplateList(this, this.getPluginFolder().resolve("template"));
 		this.serverManager = new ServerManager(this);
 
 		this.testsuiteVisual = new TestsuiteVisual(this);
 
 		// Start scheduler
-		TaskScheduler scheduler = this.getProxy().getScheduler();
-		scheduler.schedule(this, this.versionCache, 1, 1, TimeUnit.MINUTES);
-		scheduler.schedule(this, this.serverManager, 1, 1, TimeUnit.SECONDS);
-		scheduler.schedule(this, this.testsuiteVisual, 4, 4, TimeUnit.SECONDS);
-
-		// Register listener
-//		this.getProxy().getPluginManager().registerListener(this, this);
+		this.scheduleTask(this.versionCache, 1, 1, TimeUnit.MINUTES);
+		this.scheduleTask(this.serverManager, 1, 1, TimeUnit.SECONDS);
+		this.scheduleTask(this.testsuiteVisual, 4, 4, TimeUnit.SECONDS);
 
 		// Register commands
 		this.commandSuggestion = new CommandSuggestion(this);
 		this.commandRegistry = new CommandRegistry(this);
-//		this.commandManager = new BrigadierCommandManager(this);
-//		this.commandManager.register(new CommandConnect(this).brigadierCommand());
-//		this.commandManager.register(new CommandExecute(this).brigadierCommand());
-//		this.commandManager.register(new CommandReconnect(this).brigadierCommand());
-//		this.commandManager.register(new CommandRestart(this).brigadierCommand());
-//		this.commandManager.register(new CommandStop(this).brigadierCommand());
-//		this.commandManager.register(new CommandTestsuite(this).brigadierCommand());
 	}
 
 	public void disable() {
 	}
 
-//	@EventHandler
-//	public void onPlayerServerChange(ServerConnectEvent event) {
-//		Server server = event.getPlayer().getServer();
-//		if (server != null) {
-//			ServerInstance pteroServer = this.serverManager.getServer(server.getInfo().getName());
-//			if (pteroServer == null) {
-//				return;
-//			}
-//
-//			TestsuiteLogger.debug("Reset inactive time on server {1} because {0} disconnected.", event.getPlayer().getName(), pteroServer.getName());
-//			pteroServer.resetInactiveTime();
-//		}
-//	}
+	public abstract void scheduleTask(Runnable runnable, int delay, int repeat, TimeUnit unit);
 
-	public TestsuitePlayer getPlayer(String name) {
-		return null; // TODO
-	}
+	public abstract TestsuitePlayer getPlayer(String name);
 
-	public List<TestsuitePlayer> getPlayers() {
-		return null; // TODO
-	}
+	public abstract List<TestsuitePlayer> getPlayers();
 
-	public TestsuiteServer getServer(String name) {
-		return null; // TODO
-	}
+	public abstract TestsuiteServer getServer(String name);
 
-	public TestsuiteServer createServer(String name, String ip, int port) {
-		return null; // TODO
-	}
+	public abstract TestsuiteServer createServer(String name, String ip, int port);
 
-	public boolean deleteServer(String name) {
-		return false; // TODO
-	}
+	public abstract boolean deleteServer(String name);
 
-	public List<TestsuiteServer> getServers() {
-		return null; // TODO
-	}
+	public abstract List<TestsuiteServer> getServers();
 
 	public PteroApplication getPteroApplication() {
 		return this.pteroApplication;
@@ -172,7 +140,7 @@ public abstract class TestsuitePlugin {
 		return this.config;
 	}
 
-	public Path getFolder() {
-		return this.getDataFolder().toPath();
+	public Path getPluginFolder() {
+		return this.dataFolder;
 	}
 }

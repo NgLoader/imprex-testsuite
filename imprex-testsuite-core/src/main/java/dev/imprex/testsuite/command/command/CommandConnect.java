@@ -38,7 +38,9 @@ public class CommandConnect {
 					.executes(this::connectServer)
 					.then(
 							argument("player", StringArgumentType.string())
-							.suggests(this.suggestion.player().buildSuggest("player"))
+							.suggests(this.suggestion.player()
+									.map(TestsuitePlayer::getName)
+									.buildSuggest("player"))
 							.executes(this::connectPlayer)));
 	}
 

@@ -9,13 +9,13 @@ import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 
 import dev.imprex.testsuite.TestsuitePlugin;
 import dev.imprex.testsuite.command.suggestion.CommandSuggestion;
 import dev.imprex.testsuite.common.ServerType;
-import dev.imprex.testsuite.common.ServerVersion;
 import dev.imprex.testsuite.common.ServerVersionCache;
 import dev.imprex.testsuite.common.SuggestionProvider;
 import dev.imprex.testsuite.server.ServerManager;
@@ -101,7 +101,7 @@ public class CommandCreate {
 		return Command.SINGLE_SUCCESS;
 	}
 
-	public CompletableFuture<Suggestions> suggestVersions(CommandContext<TestsuiteSender> context, SuggestionsBuilder builder) {
+	public CompletableFuture<Suggestions> suggestVersions(CommandContext<TestsuiteSender> context, SuggestionsBuilder builder) throws CommandSyntaxException {
 		String name = context.getArgument("name", String.class);
 		ServerTemplate template = this.templateList.getTemplate(name);
 
@@ -110,20 +110,16 @@ public class CommandCreate {
 			return builder.buildFuture();
 		}
 
-		String input = builder.getRemaining().toLowerCase();
-		this.versionCache.getVersionList(serverType).stream()
-			.filter(version -> version.startsWith(input) || version.contains(input))
-			.filter(version -> {
-				if (template == null) {
-					return true;
-				}
-
-				String serverName = String.format("%s-%s-%s", template.getName().toLowerCase(), serverType.name(), version);
-				return this.serverManager.getServer(serverName) == null;
-			})
-			.sorted(ServerVersion::compareVersion)
-			.forEachOrdered(builder::suggest);
-
-		return builder.buildFuture();
+		return this.suggestion.version(serverType)
+				.filter(version -> {
+					if (template == null) {
+						return true;
+					}
+	
+					String serverName = String.format("%s-%s-%s", template.getName().toLowerCase(), serverType.name(), version);
+					return this.serverManager.getServer(serverName) == null;
+					})
+				.buildSuggest("version")
+				.getSuggestions(context, builder);
 	}
 }
