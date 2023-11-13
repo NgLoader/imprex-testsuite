@@ -2,7 +2,6 @@ package dev.imprex.testsuite.server;
 
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
@@ -21,11 +20,12 @@ import com.mattmalec.pterodactyl4j.entities.Allocation;
 import dev.imprex.testsuite.TestsuiteLogger;
 import dev.imprex.testsuite.TestsuitePlugin;
 import dev.imprex.testsuite.api.TestsuiteServer;
+import dev.imprex.testsuite.override.OverrideHandler;
 import dev.imprex.testsuite.template.ServerTemplate;
 import dev.imprex.testsuite.template.ServerTemplateList;
+import dev.imprex.testsuite.util.EmptyUtilization;
 import dev.imprex.testsuite.util.PteroServerStatus;
 import dev.imprex.testsuite.util.PteroUtil;
-import dev.imprex.testsuite.util.EmptyUtilization;
 
 public class ServerInstance implements Runnable {
 
@@ -35,6 +35,7 @@ public class ServerInstance implements Runnable {
 	private final ClientServer server;
 
 	private final TestsuiteServer proxyServerInfo;
+	private final OverrideHandler overrideHandler;
 
 	private WebSocketManager webSocketManager;
 	private Lock webSocketLock = new ReentrantLock();
@@ -50,6 +51,8 @@ public class ServerInstance implements Runnable {
 	public ServerInstance(ServerManager manager, ClientServer server) {
 		this.manager = manager;
 		this.server = server;
+		
+		this.overrideHandler = manager.getPlugin().getOverrideHandler();
 
 		ServerTemplateList templateList = this.manager.getPlugin().getTemplateList();
 		this.template = templateList.getTemplate(this.server.getDescription());
@@ -181,10 +184,6 @@ public class ServerInstance implements Runnable {
 		List<Path> fileList = new CopyOnWriteArrayList<>(this.template.getFiles());
 		int pathPrefix = this.template.getPath().toString().length();
 
-		Optional<Path> overridePath = fileList.stream()
-				.filter(file -> file.toString().substring(pathPrefix).contains("/override.yml"))
-				.findFirst();
-
 		PteroUtil.updateDirectory(this.server, pathPrefix, fileList).whenComplete((__, error) -> {
 			if (error != null) {
 				future.completeExceptionally(error);
@@ -193,28 +192,18 @@ public class ServerInstance implements Runnable {
 			}
 			System.gc(); // TODO test phase
 		});
-
-		if (overridePath.isPresent()) {
-//			Map<Path, OverrideConfig> overrides = this.overrideHandler.loadOverride(overridePath.get());
-//			for (Entry<Path, OverrideConfig> entry : overrides.entrySet()) {
-//				Path path = entry.getKey();
-//				OverrideConfig config = entry.getValue();
-//
-//				if (config.overrideAfterFirstStart()) {
-//					continue;
-//				}
-//
-//				Path parentPath = path.getParent();
-//				this.server.retrieveDirectory(parentPath.toString()).executeAsync(directory -> {
-//					
-//				}, error -> {
-//					
-//				});
-//			}
-		}
-
 		return future;
 	}
+
+//	public CompletableFuture<Void> override() {
+//		int pathPrefix = this.template.getPath().toString().length();
+//		Optional<Path> overridePath = this.template.getFiles().stream()
+//				.filter(file -> file.toString().substring(pathPrefix).contains("/override.yml"))
+//				.findFirst();
+//		
+//		
+//		
+//	}
 
 	public CompletableFuture<Void> executeCommand(String command) {
 		this.subscribe();

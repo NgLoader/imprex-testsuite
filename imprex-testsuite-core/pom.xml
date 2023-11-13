@@ -11,27 +11,51 @@
 
 	<artifactId>imprex-testsuite-core</artifactId>
 
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-shade-plugin</artifactId>
+				<version>3.5.1</version>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>shade</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<minimizeJar>true</minimizeJar>
+					<filters>
+						<filter>
+							<artifact>*:*</artifact>
+							<excludeDefaults>false</excludeDefaults>
+							<includes>
+								<include>dev/imprex/testsuite/**</include>
+							</includes>
+						</filter>
+					</filters>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+
 	<dependencies>
+		<!-- API -->
+		<dependency>
+			<groupId>com.mojang</groupId>
+			<artifactId>brigadier</artifactId>
+			<scope>compile</scope>
+		</dependency>
 		<dependency>
 			<groupId>net.kyori</groupId>
 			<artifactId>adventure-api</artifactId>
+			<scope>compile</scope>
 		</dependency>
 		<dependency>
 			<groupId>net.kyori</groupId>
 			<artifactId>adventure-text-serializer-plain</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>com.mojang</groupId>
-			<artifactId>brigadier</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>com.mattmalec</groupId>
-			<artifactId>Pterodactyl4J</artifactId>
-			<scope>compile</scope>
-		</dependency>
-		<dependency>
-			<groupId>com.squareup.okhttp3</groupId>
-			<artifactId>okhttp</artifactId>
 			<scope>compile</scope>
 		</dependency>
 		<dependency>
@@ -42,6 +66,13 @@
 		<dependency>
 			<groupId>org.yaml</groupId>
 			<artifactId>snakeyaml</artifactId>
+			<scope>compile</scope>
+		</dependency>
+
+		<!-- Pterodactyl -->
+		<dependency>
+			<groupId>com.mattmalec</groupId>
+			<artifactId>Pterodactyl4J</artifactId>
 			<scope>compile</scope>
 		</dependency>
 	</dependencies>

@@ -11,6 +11,58 @@
 
 	<artifactId>imprex-testsuite-bungeecord</artifactId>
 
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-shade-plugin</artifactId>
+				<version>3.5.1</version>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>shade</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<minimizeJar>true</minimizeJar>
+					<filters>
+						<filter>
+							<artifact>*:*</artifact>
+							<excludeDefaults>false</excludeDefaults>
+							<includes>
+								<include>dev/imprex/testsuite/**</include>
+							</includes>
+						</filter>
+					</filters>
+					<relocations>
+						<relocation>
+							<pattern>com.mojang</pattern>
+							<shadedPattern>dev.imprex.shaded.com.mojang</shadedPattern>
+						</relocation>
+						<relocation>
+							<pattern>net.kyori</pattern>
+							<shadedPattern>dev.imprex.shaded.net.kyori</shadedPattern>
+						</relocation>
+						<relocation>
+							<pattern>com.google</pattern>
+							<shadedPattern>dev.imprex.shaded.com.google</shadedPattern>
+						</relocation>
+						<relocation>
+							<pattern>org</pattern>
+							<shadedPattern>dev.imprex.shaded.org</shadedPattern>
+						</relocation>
+						<relocation>
+							<pattern>com.mattmalec</pattern>
+							<shadedPattern>dev.imprex.shaded.com.mattmalec</shadedPattern>
+						</relocation>
+					</relocations>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+
 	<dependencies>
 		<dependency>
 			<groupId>dev.imprex</groupId>
@@ -21,7 +73,6 @@
 		<dependency>
 			<groupId>net.kyori</groupId>
 			<artifactId>adventure-api</artifactId>
-			<scope>compile</scope>
 		</dependency>
 		<dependency>
 			<groupId>net.kyori</groupId>

@@ -26,7 +26,6 @@
 		</repository>
 		<repository>
 			<id>minecraft-libraries</id>
-			<name>Minecraft Libraries</name>
 			<url>https://libraries.minecraft.net</url>
 		</repository>
 		<repository>
@@ -37,10 +36,12 @@
 
 	<dependencyManagement>
 		<dependencies>
+			<!-- Implementation -->
 			<dependency>
-				<groupId>org.slf4j</groupId>
-				<artifactId>slf4j-api</artifactId>
-				<version>1.7.30</version>
+				<groupId>net.md-5</groupId>
+				<artifactId>bungeecord-api</artifactId>
+				<version>1.19-R0.1-SNAPSHOT</version>
+				<type>javadoc</type>
 				<scope>provided</scope>
 			</dependency>
 			<dependency>
@@ -48,13 +49,6 @@
 				<artifactId>bungeecord-api</artifactId>
 				<version>1.19-R0.1-SNAPSHOT</version>
 				<type>jar</type>
-				<scope>provided</scope>
-			</dependency>
-			<dependency>
-				<groupId>net.md-5</groupId>
-				<artifactId>bungeecord-api</artifactId>
-				<version>1.19-R0.1-SNAPSHOT</version>
-				<type>javadoc</type>
 				<scope>provided</scope>
 			</dependency>
 			<dependency>
@@ -69,6 +63,8 @@
 				<version>1.9-R0.1-SNAPSHOT</version>
 				<scope>provided</scope>
 			</dependency>
+			
+			<!-- Pterodactyl -->
 			<dependency>
 				<groupId>com.mattmalec</groupId>
 				<artifactId>Pterodactyl4J</artifactId>
@@ -76,33 +72,17 @@
 				<scope>provided</scope>
 			</dependency>
 			<dependency>
-				<groupId>com.mojang</groupId>
-				<artifactId>brigadier</artifactId>
-				<version>1.0.18</version>
-				<scope>provided</scope>
-			</dependency>
-			<dependency>
-				<groupId>io.netty</groupId>
-				<artifactId>netty-all</artifactId>
-				<version>4.1.97.Final</version>
-				<scope>provided</scope>
-			</dependency>
-			<dependency>
-				<groupId>com.google.code.gson</groupId>
-				<artifactId>gson</artifactId>
-				<version>2.10.1</version>
-				<scope>provided</scope>
-			</dependency>
-			<dependency>
-				<groupId>org.yaml</groupId>
-				<artifactId>snakeyaml</artifactId>
-				<version>2.2</version>
-				<scope>provided</scope>
-			</dependency>
-			<dependency>
 				<groupId>com.squareup.okhttp3</groupId>
 				<artifactId>okhttp</artifactId>
 				<version>4.11.0</version>
+				<scope>provided</scope>
+			</dependency>
+
+			<!-- API -->
+			<dependency>
+				<groupId>com.mojang</groupId>
+				<artifactId>brigadier</artifactId>
+				<version>1.0.18</version>
 				<scope>provided</scope>
 			</dependency>
 			<dependency>
@@ -123,6 +103,24 @@
 				<version>4.3.1</version>
 				<scope>provided</scope>
 			</dependency>
+			<dependency>
+				<groupId>com.google.code.gson</groupId>
+				<artifactId>gson</artifactId>
+				<version>2.10.1</version>
+				<scope>provided</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.yaml</groupId>
+				<artifactId>snakeyaml</artifactId>
+				<version>2.2</version>
+				<scope>provided</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.slf4j</groupId>
+				<artifactId>slf4j-api</artifactId>
+				<version>1.7.30</version>
+				<scope>provided</scope>
+			</dependency>
 		</dependencies>
 	</dependencyManagement>
 
@@ -135,19 +133,6 @@
 				<configuration>
 					<release>17</release>
 				</configuration>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-shade-plugin</artifactId>
-				<version>3.3.1-SNAPSHOT</version>
-				<executions>
-					<execution>
-						<phase>package</phase>
-						<goals>
-							<goal>shade</goal>
-						</goals>
-					</execution>
-				</executions>
 			</plugin>
 		</plugins>
 	</build>

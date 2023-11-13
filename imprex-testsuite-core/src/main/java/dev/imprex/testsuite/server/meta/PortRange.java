@@ -1,4 +1,4 @@
-package dev.imprex.testsuite.server;
+package dev.imprex.testsuite.server.meta;
 
 import java.util.Arrays;
 

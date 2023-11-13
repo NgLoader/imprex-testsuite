@@ -10,6 +10,7 @@ import com.mattmalec.pterodactyl4j.application.entities.PteroApplication;
 
 import dev.imprex.testsuite.TestsuitePlugin;
 import dev.imprex.testsuite.config.AllocationConfig;
+import dev.imprex.testsuite.server.meta.PortRange;
 import dev.imprex.testsuite.util.PteroUtil;
 
 public class AllocationAssignment {
