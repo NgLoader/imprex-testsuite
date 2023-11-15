@@ -38,24 +38,44 @@
 					</filters>
 					<relocations>
 						<relocation>
+							<pattern>com.mattmalec</pattern>
+							<shadedPattern>dev.imprex.shaded.com.mattmalec</shadedPattern>
+						</relocation>
+						<relocation>
+							<pattern>kotlin</pattern>
+							<shadedPattern>dev.imprex.shaded.kotlin</shadedPattern>
+						</relocation>
+						<relocation>
+							<pattern>okhttp3</pattern>
+							<shadedPattern>dev.imprex.shaded.okhttp3</shadedPattern>
+						</relocation>
+						<relocation>
+							<pattern>okio</pattern>
+							<shadedPattern>dev.imprex.shaded.okio</shadedPattern>
+						</relocation>
+						<relocation>
 							<pattern>com.mojang</pattern>
 							<shadedPattern>dev.imprex.shaded.com.mojang</shadedPattern>
 						</relocation>
 						<relocation>
-							<pattern>net.kyori</pattern>
-							<shadedPattern>dev.imprex.shaded.net.kyori</shadedPattern>
+							<pattern>com.google.gson</pattern>
+							<shadedPattern>dev.imprex.shaded.com.google.gson</shadedPattern>
 						</relocation>
 						<relocation>
-							<pattern>com.google</pattern>
-							<shadedPattern>dev.imprex.shaded.com.google</shadedPattern>
+							<pattern>org.intellij</pattern>
+							<shadedPattern>dev.imprex.shaded.org.intellij</shadedPattern>
 						</relocation>
 						<relocation>
-							<pattern>org</pattern>
-							<shadedPattern>dev.imprex.shaded.org</shadedPattern>
+							<pattern>org.jetbrains</pattern>
+							<shadedPattern>dev.imprex.shaded.org.jetbrains</shadedPattern>
 						</relocation>
 						<relocation>
-							<pattern>com.mattmalec</pattern>
-							<shadedPattern>dev.imprex.shaded.com.mattmalec</shadedPattern>
+							<pattern>org.json</pattern>
+							<shadedPattern>dev.imprex.shaded.org.json</shadedPattern>
+						</relocation>
+						<relocation>
+							<pattern>org.yaml</pattern>
+							<shadedPattern>dev.imprex.shaded.org.yaml</shadedPattern>
 						</relocation>
 					</relocations>
 				</configuration>
@@ -73,6 +93,16 @@
 		<dependency>
 			<groupId>net.kyori</groupId>
 			<artifactId>adventure-api</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>net.kyori</groupId>
+			<artifactId>adventure-api</artifactId>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>net.kyori</groupId>
+			<artifactId>adventure-text-serializer-plain</artifactId>
+			<scope>compile</scope>
 		</dependency>
 		<dependency>
 			<groupId>net.kyori</groupId>

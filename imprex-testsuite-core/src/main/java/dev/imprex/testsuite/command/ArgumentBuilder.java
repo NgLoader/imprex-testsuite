@@ -19,12 +19,13 @@ public class ArgumentBuilder {
 		return RequiredArgumentBuilder.<TestsuiteSender, T>argument(name, type);
 	}
 
-	public static String getSafeStringArgument(CommandContext<TestsuiteSender> context, String fieldName) {
-		String input = "";
+	public static String getSafeStringArgument(CommandContext<TestsuiteSender> context, String fieldName, String defaultValue) {
+		String input;
 		try {
 			input = StringArgumentType.getString(context, fieldName);
 		} catch (IllegalArgumentException e) {
-			// Ignore missing argument exception and display all values instead
+			// Ignore missing argument exception and return default value
+			return defaultValue;
 		}
 		return input;
 	}

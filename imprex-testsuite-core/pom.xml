@@ -49,16 +49,6 @@
 			<scope>compile</scope>
 		</dependency>
 		<dependency>
-			<groupId>net.kyori</groupId>
-			<artifactId>adventure-api</artifactId>
-			<scope>compile</scope>
-		</dependency>
-		<dependency>
-			<groupId>net.kyori</groupId>
-			<artifactId>adventure-text-serializer-plain</artifactId>
-			<scope>compile</scope>
-		</dependency>
-		<dependency>
 			<groupId>com.google.code.gson</groupId>
 			<artifactId>gson</artifactId>
 			<scope>compile</scope>
@@ -68,11 +58,23 @@
 			<artifactId>snakeyaml</artifactId>
 			<scope>compile</scope>
 		</dependency>
-
+		<dependency>
+			<groupId>net.kyori</groupId>
+			<artifactId>adventure-api</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>net.kyori</groupId>
+			<artifactId>adventure-text-serializer-plain</artifactId>
+		</dependency>
 		<!-- Pterodactyl -->
 		<dependency>
 			<groupId>com.mattmalec</groupId>
 			<artifactId>Pterodactyl4J</artifactId>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.squareup.okhttp3</groupId>
+			<artifactId>okhttp</artifactId>
 			<scope>compile</scope>
 		</dependency>
 	</dependencies>

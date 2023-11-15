@@ -72,7 +72,7 @@ public class SuggestionBuilder<TRoot, TOut> {
 		final Function<Stream<TRoot>, Stream<String>> transformation = this.map(Objects::toString).buildStream();
 
 		return (context, builder) -> {
-			String input = ArgumentBuilder.getSafeStringArgument(context, fieldName);
+			String input = ArgumentBuilder.getSafeStringArgument(context, fieldName, "");
 
 			transformation.apply(this.supplier.get())
 				.map(Objects::toString)

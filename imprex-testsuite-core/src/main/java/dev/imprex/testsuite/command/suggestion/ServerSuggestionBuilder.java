@@ -43,7 +43,7 @@ public class ServerSuggestionBuilder extends SuggestionBuilder<ServerInstance, S
 				.buildStream();
 
 		return (context, builder) -> {
-			String input = ArgumentBuilder.getSafeStringArgument(context, fieldName);
+			String input = ArgumentBuilder.getSafeStringArgument(context, fieldName, "");
 			String[] keywords = input.toLowerCase().split("[-_. ]");
 
 			transformation.apply(this.supplier.get())
