@@ -25,8 +25,9 @@ public class OverrideYamlParser implements OverrideParser {
 		DUMPER_OPTIONS.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
 		REPRESENTER.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
 
+		// Source start
 		/*
-		 * Source start From:
+		 * From:
 		 * https://github.com/SpigotMC/Spigot-API/blob/master/src/main/java/org/bukkit/
 		 * configuration/file/FileConfiguration.java
 		 */

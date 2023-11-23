@@ -20,7 +20,7 @@ import com.mattmalec.pterodactyl4j.entities.Allocation;
 import dev.imprex.testsuite.TestsuiteLogger;
 import dev.imprex.testsuite.TestsuitePlugin;
 import dev.imprex.testsuite.api.TestsuiteServer;
-import dev.imprex.testsuite.override.OverrideHandler;
+import dev.imprex.testsuite.override.OverrideAction;
 import dev.imprex.testsuite.template.ServerTemplate;
 import dev.imprex.testsuite.template.ServerTemplateList;
 import dev.imprex.testsuite.util.EmptyUtilization;
@@ -35,7 +35,6 @@ public class ServerInstance implements Runnable {
 	private final ClientServer server;
 
 	private final TestsuiteServer proxyServerInfo;
-	private final OverrideHandler overrideHandler;
 
 	private WebSocketManager webSocketManager;
 	private Lock webSocketLock = new ReentrantLock();
@@ -51,8 +50,6 @@ public class ServerInstance implements Runnable {
 	public ServerInstance(ServerManager manager, ClientServer server) {
 		this.manager = manager;
 		this.server = server;
-		
-		this.overrideHandler = manager.getPlugin().getOverrideHandler();
 
 		ServerTemplateList templateList = this.manager.getPlugin().getTemplateList();
 		this.template = templateList.getTemplate(this.server.getDescription());
@@ -195,15 +192,10 @@ public class ServerInstance implements Runnable {
 		return future;
 	}
 
-//	public CompletableFuture<Void> override() {
-//		int pathPrefix = this.template.getPath().toString().length();
-//		Optional<Path> overridePath = this.template.getFiles().stream()
-//				.filter(file -> file.toString().substring(pathPrefix).contains("/override.yml"))
-//				.findFirst();
-//		
-//		
-//		
-//	}
+	public CompletableFuture<Integer> override(boolean overrideAfterStart) {
+		this.subscribe();
+		return OverrideAction.override(this.server, overrideAfterStart);
+	}
 
 	public CompletableFuture<Void> executeCommand(String command) {
 		this.subscribe();

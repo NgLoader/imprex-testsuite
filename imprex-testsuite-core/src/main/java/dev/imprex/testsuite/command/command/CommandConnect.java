@@ -72,7 +72,7 @@ public class CommandConnect {
 
 		String executorName = context.getSource() instanceof TestsuitePlayer executor ? executor.getName() : "CONSOLE";
 		String playername = context.getArgument("player", String.class);
-		if (playername.equalsIgnoreCase("@all")) {
+		if (playername.equalsIgnoreCase("all")) {
 			int sendCount = 0;
 			for (TestsuitePlayer targetPlayer : this.plugin.getPlayers()) {
 				TestsuiteServer serverConnection = targetPlayer.getServer();
@@ -99,7 +99,7 @@ public class CommandConnect {
 
 			targetPlayer.connect(server);
 			Chat.send(context, "Connecting {0} to \"{1}\"", targetPlayer.getName(), server.getName());
-			Chat.send(targetPlayer, "{0} sending you to \"{1}\"", executorName, server.getName());
+			Chat.send(targetPlayer, "{0} is sending you to \"{1}\"", executorName, server.getName());
 		}
 		return Command.SINGLE_SUCCESS;
 	}

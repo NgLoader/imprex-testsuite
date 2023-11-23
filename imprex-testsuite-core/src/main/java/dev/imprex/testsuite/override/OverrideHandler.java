@@ -3,6 +3,7 @@ package dev.imprex.testsuite.override;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.StringReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
@@ -27,14 +28,7 @@ public class OverrideHandler {
 			.setPrettyPrinting()
 			.create();
 
-	private final OverrideParserRegistry parserRegistry = new OverrideParserRegistry();
-
-	public OverrideHandler() {
-		this.parserRegistry.register(OverrideYamlParser.class, "yaml", "yml");
-		this.parserRegistry.register(OverridePropertiesParser.class, "properties");
-	}
-
-	public Map<Path, OverrideConfig> loadOverride(Path path) {
+	public static Map<Path, OverrideConfig> loadOverride(Path path) {
 		if (!Files.notExists(path)) {
 			return Collections.emptyMap();
 		}
@@ -51,6 +45,28 @@ public class OverrideHandler {
 			e.printStackTrace();
 		}
 		return overrideFiles;
+	}
+
+	public static Map<String, OverrideConfig> loadOverride(String content) {
+		Map<String, OverrideConfig> overrideFiles = new HashMap<>();
+		try (BufferedReader bufferedReader = new BufferedReader(new StringReader(content))) {
+			JsonObject root = JsonParser.parseReader(bufferedReader).getAsJsonObject();
+			for (Entry<String, JsonElement> entry : root.entrySet()) {
+				String file = entry.getKey();
+				OverrideConfig overrideConfig = GSON.fromJson(entry.getValue(), OverrideConfig.class);
+				overrideFiles.put(file, overrideConfig);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return overrideFiles;
+	}
+
+	private final OverrideParserRegistry parserRegistry = new OverrideParserRegistry();
+
+	public OverrideHandler() {
+		this.parserRegistry.register(OverrideYamlParser.class, "yaml", "yml");
+		this.parserRegistry.register(OverridePropertiesParser.class, "properties");
 	}
 
 	public boolean overrideFile(Path file, OverrideConfig overrideConfig) {

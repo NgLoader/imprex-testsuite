@@ -31,7 +31,7 @@ public class CommandRegistry {
 
 	public CommandRegistry(TestsuitePlugin plugin) {
 		this.register(command(new CommandConnect(plugin).create())
-				.alias("con", "tc")
+				.alias("tc")
 				.asRoot());
 		this.register(command(new CommandCreate(plugin).create()));
 		this.register(command(new CommandDelete(plugin).create()));
@@ -40,12 +40,13 @@ public class CommandRegistry {
 				.asRoot());
 		this.register(command(new CommandList(plugin).create()));
 		this.register(command(new CommandReconnect(plugin).create())
-				.alias("rc", "rconnect")
+				.alias("rc")
 				.asRoot());
 		this.register(command(new CommandReinstall(plugin).create()));
 		this.register(command(new CommandRestart(plugin).create()));
 		this.register(command(new CommandSetup(plugin).create()));
-		this.register(command(new CommandStart(plugin).create()));
+		this.register(command(new CommandStart(plugin).create())
+				.asRoot());
 		this.register(command(new CommandStop(plugin).create())
 				.asRoot());
 	}
