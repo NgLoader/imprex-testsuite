@@ -139,6 +139,7 @@
 
 	<modules>
 		<module>imprex-testsuite-core</module>
+		<module>imprex-testsuite-local</module>
 		<module>imprex-testsuite-velocity</module>
 		<module>imprex-testsuite-bungeecord</module>
 	</modules>
