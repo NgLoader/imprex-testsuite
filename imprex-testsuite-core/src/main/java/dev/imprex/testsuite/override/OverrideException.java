@@ -4,7 +4,11 @@ public class OverrideException extends RuntimeException {
 
 	private static final long serialVersionUID = 1L;
 
-	public OverrideException(Throwable throwable) {
-		super(throwable);
+	public OverrideException(String message) {
+		super(message);
+	}
+
+	public OverrideException(String message, Throwable throwable) {
+		super(message, throwable);
 	}
 }

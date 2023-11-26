@@ -32,7 +32,13 @@ public class OverridePropertiesParser implements OverrideParser {
 	}
 
 	@Override
-	public void setValue(String key, Object value) {
+	public boolean setValue(String key, Object value) {
+		String currentValue = this.properties.getProperty(key);
+		if (currentValue != null && currentValue.equals(value)) {
+			return false;
+		}
+
 		this.properties.setProperty(key, value.toString());
+		return true;
 	}
 }

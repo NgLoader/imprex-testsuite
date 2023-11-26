@@ -14,5 +14,5 @@ public interface OverrideParser {
 
 	boolean save(BufferedWriter outputStream);
 
-	void setValue(String key, Object value);
+	boolean setValue(String key, Object value);
 }

@@ -62,18 +62,18 @@ public class OverrideHandler {
 		return overrideFiles;
 	}
 
-	private final OverrideParserRegistry parserRegistry = new OverrideParserRegistry();
+	private static final OverrideParserRegistry PARSER_REGISTRY = new OverrideParserRegistry();
 
-	public OverrideHandler() {
-		this.parserRegistry.register(OverrideYamlParser.class, "yaml", "yml");
-		this.parserRegistry.register(OverridePropertiesParser.class, "properties");
+	static {
+		PARSER_REGISTRY.register(OverrideYamlParser.class, "yaml", "yml");
+		PARSER_REGISTRY.register(OverridePropertiesParser.class, "properties");
 	}
 
-	public boolean overrideFile(Path file, OverrideConfig overrideConfig) {
+	public static boolean overrideFile(Path file, OverrideConfig overrideConfig) {
 		try {
 			Files.createDirectories(file.getParent());
 
-			OverrideParser parser = this.parserRegistry.createParser(overrideConfig.parser());
+			OverrideParser parser = PARSER_REGISTRY.createParser(overrideConfig.parser());
 			if (parser == null) {
 				System.out.println("Unable to create parser \"" + overrideConfig.parser() + "\" for \"" + file + "\"");
 				return false;
@@ -93,9 +93,8 @@ public class OverrideHandler {
 			}
 
 			try (BufferedWriter bufferedWriter = Files.newBufferedWriter(file)) {
-				parser.save(bufferedWriter);
+				return parser.save(bufferedWriter);
 			}
-			return true;
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -109,25 +108,28 @@ public class OverrideHandler {
 	 * @param overrideConfig
 	 * @return
 	 */
-	public boolean overrideFile(BufferedReader bufferedReader, BufferedWriter bufferedWriter, OverrideConfig overrideConfig) {
-		OverrideParser parser = this.parserRegistry.createParser(overrideConfig.parser());
+	public static int overrideFile(BufferedReader bufferedReader, BufferedWriter bufferedWriter, OverrideConfig overrideConfig) {
+		OverrideParser parser = PARSER_REGISTRY.createParser(overrideConfig.parser());
 		if (parser == null) {
 			System.out.println("Unable to create parser \"" + overrideConfig.parser() + "\"");
-			return false;
+			return 0;
 		}
 
 		if (!parser.load(bufferedReader)) {
 			System.out.println("Unable to load parser \"" + overrideConfig.parser() + "\"");
-			return false;
+			return 0;
 		}
 
+		int changes = 0;
 		for (Entry<String, Object> entry : overrideConfig.find().entrySet()) {
 			String field = entry.getKey();
 			Object value = entry.getValue();
-			parser.setValue(field, value);
+			if (parser.setValue(field, value)) {
+				changes++;
+			}
 		}
 
 		parser.save(bufferedWriter);
-		return true;
+		return changes;
 	}
 }

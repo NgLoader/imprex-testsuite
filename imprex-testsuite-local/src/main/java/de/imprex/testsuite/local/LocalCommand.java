@@ -1,5 +1,7 @@
 package de.imprex.testsuite.local;
 
+import java.util.Scanner;
+
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 
@@ -16,8 +18,32 @@ public class LocalCommand {
 
 	private CommandDispatcher<TestsuiteSender> dispatcher;
 
+	private Scanner scanner = new Scanner(System.in);
+
 	public LocalCommand(TestsuitePlugin plugin) {
 		this.dispatcher = plugin.getCommandRegistry().getDispatcher();
+	}
+
+	public void readConsole() {
+		System.out.print("Command: ");
+		String line = scanner.nextLine();
+		if (line.equalsIgnoreCase("exit")) {
+			System.out.println("Shutdown started...");
+
+			LocalApi.RUNNING = false;
+			LocalApi.RUNNING_THREADS
+					.stream()
+					.filter(Thread::isAlive)
+					.filter(thread -> !thread.isInterrupted())
+					.forEach(Thread::interrupt);
+
+			System.out.println("Bye.");
+			System.exit(0);
+			return;
+		}
+
+		this.execute(line);
+		this.readConsole();
 	}
 
 	public void execute(String input) {

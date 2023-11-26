@@ -74,7 +74,7 @@ public class PteroUtil {
 				});
 			} else {
 				try {
-					InputStream inputStream = Files.newInputStream(file);
+					InputStream inputStream = Files.newInputStream(file); // will be closed after uploading
 					uploadFileAction.addFile(inputStream, file.getFileName().toString());
 					needUpload = true;
 					future.complete(null);

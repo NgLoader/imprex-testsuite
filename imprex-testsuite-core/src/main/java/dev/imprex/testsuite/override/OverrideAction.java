@@ -21,83 +21,50 @@ public class OverrideAction {
 	private final AtomicInteger overrideCount = new AtomicInteger();
 
 	private final ClientServer server;
-	private final boolean overrideAfterStart;
+	private final boolean serverRunning;
 
-	private CompletableFuture<Integer> finalFuture;
-
-	private OverrideAction(ClientServer server, boolean overrideAfterStart) {
+	private OverrideAction(ClientServer server, boolean serverRunning) {
 		this.server = server;
-		this.overrideAfterStart = overrideAfterStart;
+		this.serverRunning = serverRunning;
 	}
 
 	private CompletableFuture<Integer> override() {
-		if (this.finalFuture != null) {
-			throw new IllegalStateException("Override action was already called!");
-		}
-
-		PteroUtil.execute(this.server.retrieveDirectory())
-				.thenApply(this::selectOverrideFile)
-				.thenApply(file -> PteroUtil.execute(file.retrieveContent()))
-				.whenComplete(this::handleOverrideConfig);
-
-		return this.finalFuture = new CompletableFuture<>();
+		return PteroUtil.execute(this.server.retrieveDirectory())
+				.thenCompose(this::retrieveOverrideFile) // load override file
+				.thenApply(OverrideHandler::loadOverride) // read override settings
+				.thenApply(this::createOverrideRequests) // create override requests
+				.thenCompose(this::overrideFiles); // override all files
 	}
 
-	private void handleOverrideConfig(CompletableFuture<String> config, Throwable error) {
-		this.handleException(error);
-
-		config.thenApply(OverrideHandler::loadOverride)
-				.thenApply(this::createOverrideRequests)
-				.whenComplete(this::handleOverrideRequests);
-	}
-
-	private void handleOverrideRequests(Stream<OverrideActionRequest> requests, Throwable error) {
-		this.handleException(error);
-
+	private CompletableFuture<Integer> overrideFiles(Stream<OverrideActionFile> requests) {
 		// TODO fetch directory requests and merge together
-		CompletableFuture.allOf(requests
-						.map(action -> action.override(this))
-						.map(action -> action.thenAccept(this::handleOverrideEntryResult))
-						.toArray(CompletableFuture[]::new))
-				.whenComplete(this::handleOverrideResult);
+		return PteroUtil.execute(this.server.retrieveDirectory())
+				.thenCompose(directory -> {
+					return CompletableFuture.allOf(requests
+							.map(action -> action.overrideFile(directory)
+									.thenAccept(changes -> this.overrideCount.getAndAdd(changes)))
+							.toArray(CompletableFuture[]::new));
+				})
+				.thenApply(__ -> this.overrideCount.getAcquire());
 	}
 
-	private void handleOverrideResult(Void __, Throwable error) {
-		this.handleException(error);
-
-		this.finalFuture.complete(this.overrideCount.getAcquire());
-	}
-
-	private void handleOverrideEntryResult(Boolean result) {
-		if (result) {
-			this.overrideCount.incrementAndGet();
-		}
-	}
-
-	private Stream<OverrideActionRequest> createOverrideRequests(Map<String, OverrideConfig> configFiles) {
+	private Stream<OverrideActionFile> createOverrideRequests(Map<String, OverrideConfig> configFiles) {
 		return configFiles.entrySet().stream()
-				.filter(entry -> entry.getValue().overrideAfterFirstStart() ? this.overrideAfterStart : true)
-				.map(OverrideActionRequest::new);
+				.filter(entry -> entry.getValue().overrideAfterStart() ? this.serverRunning : true)
+				.map(entry -> new OverrideActionFile(this.server, entry.getValue(), entry.getKey()));
 	}
 
-	private File selectOverrideFile(Directory directory) {
+	private CompletableFuture<String> retrieveOverrideFile(Directory directory) {
 		Optional<File> optionalOverrideLocalFile = directory.getFileByName("override.local.yml");
 		if (optionalOverrideLocalFile.isPresent()) {
-			return optionalOverrideLocalFile.get();
+			return PteroUtil.execute(optionalOverrideLocalFile.get().retrieveContent());
 		}
 
 		Optional<File> optionalOverrideFile = directory.getFileByName("override.yml");
 		if (optionalOverrideFile.isPresent()) {
-			return optionalOverrideFile.get();
+			return PteroUtil.execute(optionalOverrideFile.get().retrieveContent());
 		}
 
-		throw new NullPointerException("Unable to find any override file!");
-	}
-
-	private void handleException(Throwable error) {
-		if (error != null) {
-			this.finalFuture.completeExceptionally(error);
-			throw new OverrideException(error); // maybe find a better way to cancel the current workflow
-		}
+		throw new OverrideException("Unable to find any override file!");
 	}
 }

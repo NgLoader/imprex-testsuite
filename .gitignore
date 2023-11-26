@@ -32,6 +32,7 @@ local.properties
 # Code Recommenders
 .recommenders/
 /target/
+/tmp/
 
 #Logs
 *.log

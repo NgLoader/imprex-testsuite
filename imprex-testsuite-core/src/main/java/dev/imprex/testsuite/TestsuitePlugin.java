@@ -16,7 +16,6 @@ import dev.imprex.testsuite.command.CommandRegistry;
 import dev.imprex.testsuite.command.suggestion.CommandSuggestion;
 import dev.imprex.testsuite.config.PterodactylConfig;
 import dev.imprex.testsuite.config.TestsuiteConfig;
-import dev.imprex.testsuite.override.OverrideHandler;
 import dev.imprex.testsuite.server.ServerManager;
 import dev.imprex.testsuite.server.meta.ServerVersionCache;
 import dev.imprex.testsuite.template.ServerTemplateList;
@@ -30,8 +29,6 @@ public class TestsuitePlugin implements TestsuiteApi {
 
 	private PteroApplication pteroApplication;
 	private PteroClient pteroClient;
-
-	private OverrideHandler overrideHandler;
 
 	private ServerVersionCache versionCache;
 	private ServerTemplateList templateList;
@@ -70,8 +67,6 @@ public class TestsuitePlugin implements TestsuiteApi {
 				.buildClient();
 
 		// Register systems
-		this.overrideHandler = new OverrideHandler();
-
 		this.versionCache = new ServerVersionCache(this.getPluginFolder().resolve("version_cache.json"));
 		this.templateList = new ServerTemplateList(this, this.getPluginFolder().resolve("template"));
 		this.serverManager = new ServerManager(this);
@@ -132,10 +127,6 @@ public class TestsuitePlugin implements TestsuiteApi {
 
 	public PteroClient getPteroClient() {
 		return this.pteroClient;
-	}
-
-	public OverrideHandler getOverrideHandler() {
-		return this.overrideHandler;
 	}
 
 	public ServerVersionCache getVersionCache() {

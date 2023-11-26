@@ -17,6 +17,7 @@ import dev.imprex.testsuite.command.command.CommandDelete;
 import dev.imprex.testsuite.command.command.CommandDisableIdleTimeout;
 import dev.imprex.testsuite.command.command.CommandExecute;
 import dev.imprex.testsuite.command.command.CommandList;
+import dev.imprex.testsuite.command.command.CommandOverride;
 import dev.imprex.testsuite.command.command.CommandReconnect;
 import dev.imprex.testsuite.command.command.CommandReinstall;
 import dev.imprex.testsuite.command.command.CommandRestart;
@@ -39,6 +40,7 @@ public class CommandRegistry {
 		this.register(command(new CommandExecute(plugin).create())
 				.asRoot());
 		this.register(command(new CommandList(plugin).create()));
+		this.register(command(new CommandOverride(plugin).create()));
 		this.register(command(new CommandReconnect(plugin).create())
 				.alias("rc")
 				.asRoot());

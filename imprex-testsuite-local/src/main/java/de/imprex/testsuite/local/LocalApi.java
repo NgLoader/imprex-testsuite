@@ -1,5 +1,6 @@
 package de.imprex.testsuite.local;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,12 +14,28 @@ import dev.imprex.testsuite.api.TestsuiteServer;
 
 public class LocalApi implements TestsuiteApi {
 
+	public static final List<Thread> RUNNING_THREADS = new ArrayList<>();
+	public static volatile boolean RUNNING = true;
+
 	private final Map<String, TestsuitePlayer> playerCache = new HashMap<>();
 	private final Map<String, TestsuiteServer> serverCache = new HashMap<>();
 
 	@Override
 	public void scheduleTask(Runnable runnable, int delay, int repeat, TimeUnit unit) {
-		// TODO start threads
+		Thread thread = new Thread(() -> {
+			try {
+				Thread.sleep(unit.toMillis(delay));
+
+				while (RUNNING) {
+					Thread.sleep(unit.toMillis(repeat));
+					runnable.run();
+				}
+			} catch (InterruptedException e) {
+			}
+		}, "testsuite-schedule-thread");
+
+		RUNNING_THREADS.add(thread);
+		thread.start();
 	}
 
 	@Override

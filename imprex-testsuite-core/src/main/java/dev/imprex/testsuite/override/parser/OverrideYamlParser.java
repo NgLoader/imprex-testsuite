@@ -21,7 +21,7 @@ public class OverrideYamlParser implements OverrideParser {
 	private static final Yaml YAML = new Yaml(REPRESENTER, DUMPER_OPTIONS);
 
 	static {
-		DUMPER_OPTIONS.setIndent(0);
+		DUMPER_OPTIONS.setIndent(1);
 		DUMPER_OPTIONS.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
 		REPRESENTER.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
 
@@ -48,6 +48,9 @@ public class OverrideYamlParser implements OverrideParser {
 	public boolean load(BufferedReader inputStream) {
 		try {
 			this.rootSection = YAML.load(inputStream);
+			if (this.rootSection == null) {
+				this.rootSection = YAML.load("{}");
+			}
 			return true;
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -67,13 +70,13 @@ public class OverrideYamlParser implements OverrideParser {
 	}
 
 	@Override
-	public void setValue(String key, Object value) {
+	public boolean setValue(String key, Object value) {
 		String[] keys = key.split(SEPERATOR);
-		this.setValue(keys, 0, rootSection, value);
+		return this.setValue(keys, 0, this.rootSection, value);
 	}
 
 	@SuppressWarnings("unchecked")
-	private void setValue(String[] keys, int index, Map<?, Object> section, Object newValue) {
+	private boolean setValue(String[] keys, int index, Map<?, Object> section, Object newValue) {
 		String key = keys[index];
 		boolean lastSection = keys.length - 1 == index;
 
@@ -83,22 +86,26 @@ public class OverrideYamlParser implements OverrideParser {
 
 			if (entryKey.equals(key)) {
 				if (lastSection) {
+					if (entryValue.equals(newValue)) {
+						return false;
+					}
 					entry.setValue(newValue);
-					return;
+					return true;
 				}
 
 				if (entryValue instanceof Map<?, ?> entrySection) {
-					this.setValue(keys, index + 1, (Map<?, Object>) entrySection, newValue);
+					return this.setValue(keys, index + 1, (Map<?, Object>) entrySection, newValue);
 				}
 			}
 		}
 
 		if (lastSection) {
 			((Map<Object, Object>) section).put(key, newValue);
+			return true;
 		} else {
 			Map<?, Object> newSection = new HashMap<>();
 			((Map<Object, Object>) section).put(key, newSection);
-			this.setValue(keys, index + 1, newSection, newValue);
+			return this.setValue(keys, index + 1, newSection, newValue);
 		}
 	}
 }

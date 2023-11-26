@@ -12,10 +12,10 @@ public class LocalPlugin extends TestsuitePlugin {
 	}
 
 	public LocalPlugin(String[] args) {
-		super.load(Logger.getGlobal(), Path.of("./temp"));
+		super.load(Logger.getGlobal(), Path.of("./tmp"));
 		super.enable(new LocalApi());
 
-		// TODO register commands and implement system console
-		// TODO create loop and wait for destruction
+		LocalCommand command = new LocalCommand(this);
+		command.readConsole();
 	}
 }

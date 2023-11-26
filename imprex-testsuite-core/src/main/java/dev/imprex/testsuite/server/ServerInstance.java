@@ -21,6 +21,7 @@ import dev.imprex.testsuite.TestsuiteLogger;
 import dev.imprex.testsuite.TestsuitePlugin;
 import dev.imprex.testsuite.api.TestsuiteServer;
 import dev.imprex.testsuite.override.OverrideAction;
+import dev.imprex.testsuite.override.OverrideException;
 import dev.imprex.testsuite.template.ServerTemplate;
 import dev.imprex.testsuite.template.ServerTemplateList;
 import dev.imprex.testsuite.util.EmptyUtilization;
@@ -127,6 +128,21 @@ public class ServerInstance implements Runnable {
 		if (this.status.getAndSet(status) != status) {
 			TestsuiteLogger.broadcast("[{0}] Status: {1}", this.getName(), status.name());
 
+			if (status == UtilizationState.RUNNING) {
+				this.override(true).whenComplete((changes, error) -> {
+					if (error != null) {
+						if (error instanceof OverrideException) {
+							TestsuiteLogger.info("Unable to execute override file for server {0} because {1}", this.getName(), error.getMessage());
+						} else {
+							error.printStackTrace();
+						}
+					} else if (changes != 0) {
+						TestsuiteLogger.broadcast("[{0}] override has changed {1} values", this.getName(), changes);
+					}
+					System.out.println("CHANGES: " + changes);
+				});
+			}
+
 			if (status == UtilizationState.OFFLINE) {
 				// Wait 5min. for some other actions and then close the web socket
 //				this.unsubscribe();
@@ -192,19 +208,24 @@ public class ServerInstance implements Runnable {
 		return future;
 	}
 
-	public CompletableFuture<Integer> override(boolean overrideAfterStart) {
-		this.subscribe();
-		return OverrideAction.override(this.server, overrideAfterStart);
-	}
-
 	public CompletableFuture<Void> executeCommand(String command) {
 		this.subscribe();
 		return PteroUtil.execute(this.server.sendCommand(command));
 	}
 
 	public CompletableFuture<Void> start() {
-		this.subscribe();
-		return PteroUtil.execute(this.server.start());
+//		this.subscribe(); // is already called in override
+		return this.override(false).whenComplete((changes, error) -> {
+			if (error != null) {
+				if (error instanceof OverrideException) {
+					TestsuiteLogger.info("Unable to execute override file for server {0} because {1}", this.getName(), error.getMessage());
+				} else {
+					error.printStackTrace();
+				}
+			} else if (changes != 0) {
+				TestsuiteLogger.broadcast("[{0}] override has changed {1} values", this.getName(), changes);
+			}
+		}).thenCompose(__ -> PteroUtil.execute(this.server.start()));
 	}
 
 	public CompletableFuture<Void> restart() {
@@ -225,6 +246,15 @@ public class ServerInstance implements Runnable {
 	public CompletableFuture<Void> reinstall() {
 		this.subscribe();
 		return PteroUtil.execute(this.server.getManager().reinstall());
+	}
+
+	public CompletableFuture<Integer> override() {
+		return this.override(this.status.get() == UtilizationState.RUNNING);
+	}
+
+	public CompletableFuture<Integer> override(boolean overrideAfterStart) {
+		this.subscribe();
+		return OverrideAction.override(this.server, overrideAfterStart);
 	}
 
 	public CompletableFuture<Void> delete() {
