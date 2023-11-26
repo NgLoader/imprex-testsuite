@@ -17,6 +17,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+import dev.imprex.testsuite.TestsuiteLogger;
 import dev.imprex.testsuite.override.parser.OverrideParser;
 import dev.imprex.testsuite.override.parser.OverrideParserRegistry;
 import dev.imprex.testsuite.override.parser.OverridePropertiesParser;
@@ -69,36 +70,43 @@ public class OverrideHandler {
 		PARSER_REGISTRY.register(OverridePropertiesParser.class, "properties");
 	}
 
-	public static boolean overrideFile(Path file, OverrideConfig overrideConfig) {
+	public static int overrideFile(Path file, OverrideConfig overrideConfig) {
 		try {
 			Files.createDirectories(file.getParent());
 
 			OverrideParser parser = PARSER_REGISTRY.createParser(overrideConfig.parser());
 			if (parser == null) {
-				System.out.println("Unable to create parser \"" + overrideConfig.parser() + "\" for \"" + file + "\"");
-				return false;
+				TestsuiteLogger.info("Unable to create parser \"{0}\" for \"{1}\"", overrideConfig.parser(), file);
+				return 0;
 			}
 
 			try (BufferedReader bufferedReader = Files.newBufferedReader(file)) {
 				if (!parser.load(bufferedReader)) {
-					System.out.println("Unable to load parser \"" + overrideConfig.parser() + "\" for \"" + file + "\"");
-					return false;
+					TestsuiteLogger.info("Unable to load parser \"{0}\" for \"{1}\"", overrideConfig.parser(), file);
+					return 0;
 				}
 			}
 
+			int changes = 0;
 			for (Entry<String, Object> entry : overrideConfig.find().entrySet()) {
 				String field = entry.getKey();
 				Object value = entry.getValue();
-				parser.setValue(field, value);
+				if (parser.setValue(field, value)) {
+					changes++;
+				}
 			}
 
-			try (BufferedWriter bufferedWriter = Files.newBufferedWriter(file)) {
-				return parser.save(bufferedWriter);
+			if (changes != 0) {
+				try (BufferedWriter bufferedWriter = Files.newBufferedWriter(file)) {
+					parser.save(bufferedWriter);
+				}
 			}
+
+			return changes;
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		return false;
+		return 0;
 	}
 
 	/**
@@ -111,12 +119,12 @@ public class OverrideHandler {
 	public static int overrideFile(BufferedReader bufferedReader, BufferedWriter bufferedWriter, OverrideConfig overrideConfig) {
 		OverrideParser parser = PARSER_REGISTRY.createParser(overrideConfig.parser());
 		if (parser == null) {
-			System.out.println("Unable to create parser \"" + overrideConfig.parser() + "\"");
+			TestsuiteLogger.info("Unable to create parser \"{0}\"", overrideConfig.parser());
 			return 0;
 		}
 
 		if (!parser.load(bufferedReader)) {
-			System.out.println("Unable to load parser \"" + overrideConfig.parser() + "\"");
+			TestsuiteLogger.info("Unable to load parser \"{0}\"", overrideConfig.parser());
 			return 0;
 		}
 

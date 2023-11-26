@@ -45,11 +45,13 @@ public class OverrideAction {
 									.thenAccept(changes -> this.overrideCount.getAndAdd(changes)))
 							.toArray(CompletableFuture[]::new));
 				})
+				.thenAccept(__ -> System.gc()) // TODO test phase (memory issue with pterodactyl4j api)
 				.thenApply(__ -> this.overrideCount.getAcquire());
 	}
 
 	private Stream<OverrideActionFile> createOverrideRequests(Map<String, OverrideConfig> configFiles) {
 		return configFiles.entrySet().stream()
+				.filter(entry -> entry.getValue() != null && entry.getValue().isValid())
 				.filter(entry -> entry.getValue().overrideAfterStart() ? this.serverRunning : true)
 				.map(entry -> new OverrideActionFile(this.server, entry.getValue(), entry.getKey()));
 	}

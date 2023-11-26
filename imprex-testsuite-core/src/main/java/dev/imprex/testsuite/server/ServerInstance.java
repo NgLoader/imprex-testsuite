@@ -139,7 +139,6 @@ public class ServerInstance implements Runnable {
 					} else if (changes != 0) {
 						TestsuiteLogger.broadcast("[{0}] override has changed {1} values", this.getName(), changes);
 					}
-					System.out.println("CHANGES: " + changes);
 				});
 			}
 
@@ -203,7 +202,7 @@ public class ServerInstance implements Runnable {
 			} else {
 				future.complete(null);
 			}
-			System.gc(); // TODO test phase
+			System.gc(); // TODO test phase (memory issue with pterodactyl4j api)
 		});
 		return future;
 	}

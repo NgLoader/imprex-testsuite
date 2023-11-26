@@ -25,7 +25,6 @@ public class LocalCommand {
 	}
 
 	public void readConsole() {
-		System.out.print("Command: ");
 		String line = scanner.nextLine();
 		if (line.equalsIgnoreCase("exit")) {
 			System.out.println("Shutdown started...");
