@@ -1,4 +1,4 @@
-name: Testsuite
+name: imprex-testsuite
 version: 1.0.0
 author: NgLoader
 main: dev.imprex.testsuite.bungeecord.BungeecordPlugin

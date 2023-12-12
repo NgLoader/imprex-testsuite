@@ -9,7 +9,6 @@ import dev.imprex.testsuite.TestsuiteLogger;
 import dev.imprex.testsuite.TestsuitePlugin;
 import dev.imprex.testsuite.api.TestsuiteSender;
 import dev.imprex.testsuite.util.Chat;
-import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 
 public class LocalCommand {
@@ -52,7 +51,7 @@ public class LocalCommand {
 			// Ignore syntax exceptions
 		} catch (Exception e) {
 			e.printStackTrace();
-			Chat.send(DUMMY_PLAYER, Component.text("Error occurred by executing the command!"));
+			Chat.send(DUMMY_PLAYER, builder -> builder.append("Error occurred by executing the command!"));
 		}
 	}
 }

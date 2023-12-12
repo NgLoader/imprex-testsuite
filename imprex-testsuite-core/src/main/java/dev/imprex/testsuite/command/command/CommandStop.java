@@ -45,7 +45,7 @@ public class CommandStop {
 		if (context.getSource() instanceof TestsuitePlayer player) {
 			TestsuiteServer serverConnection = player.getServer();
 			if (serverConnection == null) {
-				Chat.send(context, "Your currently not connected to any server!");
+				Chat.builder().append("Your currently not connected to any server!").send(context);
 				return Command.SINGLE_SUCCESS;
 			}
 
@@ -53,7 +53,7 @@ public class CommandStop {
 			ServerInstance server = this.serverManager.getServer(serverName);
 			this.stopServer(context.getSource(), server);
 		} else {
-			Chat.send(context, "Server was not found!");
+			Chat.builder().append("Server was not found!").send(context);
 		}
 		return Command.SINGLE_SUCCESS;
 	}
@@ -67,21 +67,21 @@ public class CommandStop {
 
 	public void stopServer(TestsuiteSender source, ServerInstance instance) {
 		if (instance == null) {
-			Chat.send(source, "Server was not found!");
+			Chat.builder().append("Server was not found!").send(source);
 			return;
 		}
 
 		if (instance.getStatus() == UtilizationState.OFFLINE || instance.getStatus() == UtilizationState.STOPPING) {
-			Chat.send(source, "Server {0} is not online!", instance.getName());
+			Chat.builder(instance).append("is not online!").send(source);
 			return;
 		}
 
-		Chat.send(source, "Stopping server {0}...", instance.getName());
+		Chat.builder(instance).append("Requesting stop...").send(source);
 		instance.stop().whenComplete((__, error) -> {
 			if (error != null) {
-				Chat.send(source, "Server {0} is unable to stop! {1}", instance.getName(), error.getMessage());
+				Chat.builder(instance).append("Server is unable to stop! {0}", error.getMessage()).send(source);
 			} else {
-				Chat.send(source, "Server {0} stopped", instance.getName());
+				Chat.builder(instance).append("Stopping server").send(source);
 			}
 		});
 	}

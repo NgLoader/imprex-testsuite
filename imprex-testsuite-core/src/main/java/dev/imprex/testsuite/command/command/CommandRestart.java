@@ -43,7 +43,7 @@ public class CommandRestart {
 		if (context.getSource() instanceof TestsuitePlayer player) {
 			TestsuiteServer serverConnection = player.getServer();
 			if (serverConnection == null) {
-				Chat.send(context, "Your currently not connected to any server!");
+				Chat.builder().append("Your currently not connected to any server!").send(context);
 				return Command.SINGLE_SUCCESS;
 			}
 
@@ -51,7 +51,7 @@ public class CommandRestart {
 			ServerInstance server = this.serverManager.getServer(serverName);
 			this.restartServer(context.getSource(), server);
 		} else {
-			Chat.send(context, "Server was not found!");
+			Chat.builder().append("Server was not found!").send(context);
 		}
 		return Command.SINGLE_SUCCESS;
 	}
@@ -65,16 +65,16 @@ public class CommandRestart {
 
 	public void restartServer(TestsuiteSender source, ServerInstance instance) {
 		if (instance == null) {
-			Chat.send(source, "Server was not found!");
+			Chat.builder().append("Server was not found!").send(source);
 			return;
 		}
 
-		Chat.send(source, "Restarting server {0}...", instance.getName());
+		Chat.builder(instance).append("Requesting restart...").send(source);
 		instance.restart().whenComplete((__, error) -> {
 			if (error != null) {
-				Chat.send(source, "Server {0} is unable to restart! {1}", instance.getName(), error.getMessage());
+				Chat.builder(instance).append("Server is unable to restart! {0}", error.getMessage()).send(source);
 			} else {
-				Chat.send(source, "Server {0} restarting", instance.getName());
+				Chat.builder(instance).append("Restarting server").send(source);
 			}
 		});
 	}

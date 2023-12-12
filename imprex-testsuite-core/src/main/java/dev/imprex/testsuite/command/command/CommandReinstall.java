@@ -37,17 +37,17 @@ public class CommandReinstall {
 		String serverName = context.getArgument("name", String.class);
 		ServerInstance server = this.serverManager.getServer(serverName);
 		if (server == null) {
-			Chat.send(context, "Server was not found!");
+			Chat.builder().append("Server was not found!").send(context);
 			return Command.SINGLE_SUCCESS;
 		}
 
-		Chat.send(context, "Reinstalling server {0}...", server.getName());
+		Chat.builder(server).append("Requesting reinstall...").send(context);
 		server.reinstall().whenComplete((__, error) -> {
 			if (error != null) {
 				error.printStackTrace();
-				Chat.send(context, "Server {0} is unable to reinstall! {1}", server.getName(), error.getMessage());
+				Chat.builder(server).append("Server is unable to reinstall! {0}", error.getMessage()).send(context);
 			} else {
-				Chat.send(context, "Server {0} reinstalling.", server.getName());
+				Chat.builder(server).append("Reinstalling server...").send(context);
 			}
 		});
 		return Command.SINGLE_SUCCESS;

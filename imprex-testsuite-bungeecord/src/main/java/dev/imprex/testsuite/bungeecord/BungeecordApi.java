@@ -1,6 +1,7 @@
 package dev.imprex.testsuite.bungeecord;
 
 import java.net.InetSocketAddress;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -10,6 +11,7 @@ import dev.imprex.testsuite.api.TestsuitePlayer;
 import dev.imprex.testsuite.api.TestsuiteServer;
 import net.md_5.bungee.api.ProxyServer;
 import net.md_5.bungee.api.config.ServerInfo;
+import net.md_5.bungee.api.connection.ProxiedPlayer;
 
 public class BungeecordApi implements TestsuiteApi {
 
@@ -39,34 +41,47 @@ public class BungeecordApi implements TestsuiteApi {
 	}
 
 	@Override
-	public TestsuiteServer getServer(String name) {
-		return BungeecordServer.get(name);
+	public List<TestsuitePlayer> getPlayers(TestsuiteServer server) {
+		ServerInfo serverInfo = this.proxy.getServerInfo(server.getName().toLowerCase());
+		if (serverInfo == null) {
+			return Collections.emptyList();
+		}
+
+		return serverInfo.getPlayers().stream()
+				.map(ProxiedPlayer::getName)
+				.map(this::getPlayer)
+				.toList();
 	}
 
 	@Override
-	public TestsuiteServer createServer(String name, String ip, int port) {
+	public void registerServerList(TestsuiteServer server) {
+		String name = server.getName().toLowerCase();
+		String ip = server.getAddress();
+		int port = server.getPort();
+
+		ServerInfo serverInfoOptional = this.proxy.getServers().get(name);
+		if (serverInfoOptional != null) {
+			InetSocketAddress socketAddress = ((InetSocketAddress) serverInfoOptional.getSocketAddress());
+
+			if (socketAddress.getHostName().equalsIgnoreCase(ip) &&
+					socketAddress.getPort() == port) {
+				return;
+			}
+
+			this.unregisterServerList(name);
+		}
+
 		ServerInfo serverInfo = this.proxy.constructServerInfo(name, new InetSocketAddress(ip, port), "", false);
 		this.proxy.getServers().put(name, serverInfo);
-		BungeecordServer.add(serverInfo);
-		return BungeecordServer.get(serverInfo);
 	}
 
 	@Override
-	public boolean deleteServer(String name) {
+	public boolean unregisterServerList(String name) {
 		ServerInfo serverInfo = this.proxy.getServerInfo(name);
 		if (serverInfo != null) {
-			BungeecordServer.remove(serverInfo);
 			this.proxy.getServers().remove(serverInfo.getName());
 			return true;
 		}
 		return false;
-	}
-
-	@Override
-	public List<TestsuiteServer> getServers() {
-		return this.proxy.getServers().values().stream()
-				.map(BungeecordServer::get)
-				.filter(Objects::nonNull)
-				.toList();
 	}
 }

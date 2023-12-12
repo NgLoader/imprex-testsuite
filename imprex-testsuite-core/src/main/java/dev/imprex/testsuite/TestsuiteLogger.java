@@ -4,6 +4,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import dev.imprex.testsuite.util.Chat;
+import dev.imprex.testsuite.util.ChatMessageBuilder;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 
@@ -30,16 +31,13 @@ public class TestsuiteLogger {
 		}
 	}
 
-	public static void broadcast(Component message) {
+	public static void broadcast(ChatMessageBuilder<?> messageBuilder) {
+		Component message = messageBuilder.build();
 		TestsuiteLogger.info(PlainTextComponentSerializer.plainText().serialize(message));
 
 		if (TestsuiteLogger.plugin != null) {
-			TestsuiteLogger.plugin.getPlayers().forEach(player -> Chat.send(player, message));
+			TestsuiteLogger.plugin.getPlayers().forEach(messageBuilder::send);
 		}
-	}
-
-	public static void broadcast(String message, Object... args) {
-		TestsuiteLogger.broadcast(Component.text(Chat.format(message, args)));
 	}
 
 	public static void info(String message, Object... args) {

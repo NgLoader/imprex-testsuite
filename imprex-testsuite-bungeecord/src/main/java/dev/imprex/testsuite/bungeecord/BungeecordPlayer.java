@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 import dev.imprex.testsuite.api.ConnectionResult;
 import dev.imprex.testsuite.api.TestsuitePlayer;
@@ -66,14 +67,16 @@ public class BungeecordPlayer implements TestsuitePlayer {
 						future.completeExceptionally(error);
 						return;
 					}
-					
-					future.complete(switch (result) {
-						case SUCCESS -> ConnectionResult.SUCCESS;
-						case ALREADY_CONNECTED -> ConnectionResult.ALREADY_CONNECTED;
-						case ALREADY_CONNECTING -> ConnectionResult.CONNECTION_IN_PROGRESS;
-						case EVENT_CANCEL -> ConnectionResult.CONNECTION_CANCELLED;
-						case FAIL -> ConnectionResult.SERVER_DISCONNECTED;
-					});
+
+					ProxyServer.getInstance().getScheduler().schedule(BungeecordPlugin.plugin, () -> {
+						future.complete(switch (result) {
+							case SUCCESS -> ConnectionResult.SUCCESS;
+							case ALREADY_CONNECTED -> ConnectionResult.ALREADY_CONNECTED;
+							case ALREADY_CONNECTING -> ConnectionResult.CONNECTION_IN_PROGRESS;
+							case EVENT_CANCEL -> ConnectionResult.CONNECTION_CANCELLED;
+							case FAIL -> ConnectionResult.SERVER_DISCONNECTED;
+						});
+					}, 2, TimeUnit.SECONDS);
 				})
 				.build());
 		return future;
@@ -111,7 +114,7 @@ public class BungeecordPlayer implements TestsuitePlayer {
 			return null;
 		}
 
-		return BungeecordServer.get(server);
+		return BungeecordPlugin.plugin.getTestsuite().getServer(server.getInfo().getName());
 	}
 
 }

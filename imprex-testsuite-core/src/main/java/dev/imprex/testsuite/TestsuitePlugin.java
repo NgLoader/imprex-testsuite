@@ -102,23 +102,22 @@ public class TestsuitePlugin implements TestsuiteApi {
 	}
 
 	@Override
+	public List<TestsuitePlayer> getPlayers(TestsuiteServer server) {
+		return this.api.getPlayers(server);
+	}
+
+	@Override
+	public void registerServerList(TestsuiteServer server) {
+		this.api.registerServerList(server);
+	}
+
+	@Override
+	public boolean unregisterServerList(String name) {
+		return this.api.unregisterServerList(name);
+	}
+
 	public TestsuiteServer getServer(String name) {
-		return this.api.getServer(name);
-	}
-
-	@Override
-	public TestsuiteServer createServer(String name, String ip, int port) {
-		return this.api.createServer(name, ip, port);
-	}
-
-	@Override
-	public boolean deleteServer(String name) {
-		return this.api.deleteServer(name);
-	}
-
-	@Override
-	public List<TestsuiteServer> getServers() {
-		return this.api.getServers();
+		return this.serverManager.getServer(name);
 	}
 
 	public PteroApplication getPteroApplication() {

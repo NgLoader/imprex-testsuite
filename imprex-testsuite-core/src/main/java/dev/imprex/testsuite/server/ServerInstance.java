@@ -19,23 +19,24 @@ import com.mattmalec.pterodactyl4j.entities.Allocation;
 
 import dev.imprex.testsuite.TestsuiteLogger;
 import dev.imprex.testsuite.TestsuitePlugin;
+import dev.imprex.testsuite.api.TestsuitePlayer;
 import dev.imprex.testsuite.api.TestsuiteServer;
 import dev.imprex.testsuite.override.OverrideAction;
 import dev.imprex.testsuite.override.OverrideException;
 import dev.imprex.testsuite.template.ServerTemplate;
 import dev.imprex.testsuite.template.ServerTemplateList;
+import dev.imprex.testsuite.util.Chat;
 import dev.imprex.testsuite.util.EmptyUtilization;
 import dev.imprex.testsuite.util.PteroServerStatus;
 import dev.imprex.testsuite.util.PteroUtil;
+import net.kyori.adventure.text.Component;
 
-public class ServerInstance implements Runnable {
+public class ServerInstance implements TestsuiteServer, Runnable {
 
 	private static final long MAX_INACTIVE_TIME = TimeUnit.MINUTES.toMillis(5);
 
 	private final ServerManager manager;
 	private final ClientServer server;
-
-	private final TestsuiteServer proxyServerInfo;
 
 	private WebSocketManager webSocketManager;
 	private Lock webSocketLock = new ReentrantLock();
@@ -55,18 +56,8 @@ public class ServerInstance implements Runnable {
 		ServerTemplateList templateList = this.manager.getPlugin().getTemplateList();
 		this.template = templateList.getTemplate(this.server.getDescription());
 
-		Allocation allocation = this.server.getPrimaryAllocation();
-
 		TestsuitePlugin plugin = this.manager.getPlugin();
-		TestsuiteServer serverInfo = plugin.getServer(this.getName());
-		if (serverInfo != null) {
-			this.proxyServerInfo = serverInfo;
-		} else {
-			this.proxyServerInfo = plugin.createServer(
-					this.getName(),
-					allocation.getIP(),
-					allocation.getPortInt());
-		}
+		plugin.registerServerList(this);
 
 		this.server.retrieveUtilization().executeAsync(stats -> {
 			this.updateStats(stats);
@@ -98,8 +89,8 @@ public class ServerInstance implements Runnable {
 		UtilizationState status = this.status.get();
 		if (status == UtilizationState.RUNNING &&
 				this.idleTimeout.get() &&
-				this.proxyServerInfo.getPlayers().isEmpty()) {
-			TestsuiteLogger.broadcast("[{0}] Stopping duo to inactivity", this.getName());
+				this.getPlayers().isEmpty()) {
+			this.notifyMessage("Stopping duo to inactivity");
 			this.stop();
 		} else if (status == UtilizationState.OFFLINE) {
 			PteroServerStatus serverStatus = this.serverStatus.get();
@@ -111,7 +102,7 @@ public class ServerInstance implements Runnable {
 
 	void updateServerStatus(PteroServerStatus serverStatus) {
 		if (this.serverStatus.getAndSet(serverStatus) != serverStatus) {
-			TestsuiteLogger.broadcast("[{0}] Status: {1}", this.getName(), serverStatus.name());
+			this.notifyMessage("Status: {0}", serverStatus.name());
 
 			if (serverStatus == PteroServerStatus.INSTALLING) {
 				this.subscribe();
@@ -126,7 +117,7 @@ public class ServerInstance implements Runnable {
 
 	void updateStatus(UtilizationState status) {
 		if (this.status.getAndSet(status) != status) {
-			TestsuiteLogger.broadcast("[{0}] Status: {1}", this.getName(), status.name());
+			this.notifyMessage("Status: {0}", status.name());
 
 			if (status == UtilizationState.RUNNING) {
 				this.override(true).whenComplete((changes, error) -> {
@@ -137,7 +128,7 @@ public class ServerInstance implements Runnable {
 							error.printStackTrace();
 						}
 					} else if (changes != 0) {
-						TestsuiteLogger.broadcast("[{0}] override has changed {1} values", this.getName(), changes);
+						this.notifyMessage("override has changed {0} values", changes);
 					}
 				});
 			}
@@ -161,7 +152,7 @@ public class ServerInstance implements Runnable {
 				this.webSocketManager = this.server.getWebSocketBuilder()
 						.addEventListeners(new ServerListener(this))
 						.build();
-				TestsuiteLogger.broadcast("[{0}] Connecting to websocket...", this.getName());
+				this.notifyMessage("Connecting to websocket...");
 			}
 		} finally {
 			this.webSocketLock.unlock();
@@ -179,7 +170,7 @@ public class ServerInstance implements Runnable {
 				}
 
 				this.webSocketManager = null;
-				TestsuiteLogger.broadcast("[{0}] Disonnected from websocket.", this.getName());
+				this.notifyMessage("Disonnected from websocket.");
 			}
 		} finally {
 			this.webSocketLock.unlock();
@@ -220,9 +211,10 @@ public class ServerInstance implements Runnable {
 					TestsuiteLogger.info("Unable to execute override file for server {0} because {1}", this.getName(), error.getMessage());
 				} else {
 					error.printStackTrace();
+					TestsuiteLogger.info("Unable to execute override file for server {0}", this.getName());
 				}
 			} else if (changes != 0) {
-				TestsuiteLogger.broadcast("[{0}] override has changed {1} values", this.getName(), changes);
+				this.notifyMessage("Override has changed {0} variables", changes);
 			}
 		}).thenCompose(__ -> PteroUtil.execute(this.server.start()));
 	}
@@ -252,8 +244,8 @@ public class ServerInstance implements Runnable {
 	}
 
 	public CompletableFuture<Integer> override(boolean overrideAfterStart) {
-		this.subscribe();
-		return OverrideAction.override(this.server, overrideAfterStart);
+//		this.subscribe();
+		return OverrideAction.override(this, overrideAfterStart);
 	}
 
 	public CompletableFuture<Void> delete() {
@@ -269,9 +261,13 @@ public class ServerInstance implements Runnable {
 		return this.idleTimeout.compareAndSet(state, !state) ? !state : state;
 	}
 
+	public void notifyMessage(String message, Object... arguments) {
+		Chat.builder(this).append(message, arguments).broadcast();
+	}
+
 	public void close() {
-		TestsuiteLogger.broadcast("Removing server instance \"{0}\"", this.getName());
-		this.manager.getPlugin().deleteServer(this.getName());
+		this.notifyMessage("Removing server instance");
+		this.manager.getPlugin().unregisterServerList(this.getName());
 		this.unsubscribe();
 	}
 
@@ -282,10 +278,6 @@ public class ServerInstance implements Runnable {
 		} finally {
 			this.webSocketLock.unlock();
 		}
-	}
-
-	public TestsuiteServer getCurrentServer() {
-		return this.proxyServerInfo;
 	}
 
 	public Utilization getStats() {
@@ -318,5 +310,35 @@ public class ServerInstance implements Runnable {
 
 	public String getName() {
 		return this.server.getName();
+	}
+
+	@Override
+	public String getAddress() {
+		Allocation allocation = this.server.getPrimaryAllocation();
+		return allocation.getIP();
+	}
+
+	@Override
+	public int getPort() {
+		Allocation allocation = this.server.getPrimaryAllocation();
+		return allocation.getPortInt();
+	}
+
+	public ClientServer getClientServer() {
+		return this.server;
+	}
+
+	public ServerManager getManager() {
+		return this.manager;
+	}
+
+	@Override
+	public void broadcast(Component component) {
+		this.getPlayers().forEach(player -> player.sendMessage(component));
+	}
+
+	@Override
+	public List<TestsuitePlayer> getPlayers() {
+		return this.manager.getPlugin().getPlayers(this);
 	}
 }

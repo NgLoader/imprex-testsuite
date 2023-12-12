@@ -1,10 +1,13 @@
 package dev.imprex.testsuite.util;
 
-import com.mojang.brigadier.Command;
+import java.util.function.Consumer;
+
 import com.mojang.brigadier.context.CommandContext;
 
 import dev.imprex.testsuite.api.TestsuiteSender;
+import dev.imprex.testsuite.api.TestsuiteServer;
 import dev.imprex.testsuite.server.ServerInstance;
+import dev.imprex.testsuite.util.ChatMessageBuilder.ChatMessageSenderBuilder;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextColor;
 
@@ -12,25 +15,34 @@ public class Chat {
 
 	public static final Component PREFIX = Component.text("")
 			.append(Component.text("[").color(TextColor.color(60, 70, 200)))
-			.append(Component.text("Testsuite").color(TextColor.color(60, 180, 200)))
+			.append(Component.text("TSuite").color(TextColor.color(60, 180, 200)))
 			.append(Component.text("]").color(TextColor.color(60, 70, 200)))
 			.append(Component.space());
 
-	public static int send(CommandContext<TestsuiteSender> context, Component component) {
-		return send(context.getSource(), component);
+	public static ChatMessageBuilder<?> builder() {
+		return new ChatMessageBuilder<>();
 	}
 
-	public static int send(CommandContext<TestsuiteSender> context, String message, Object... args) {
-		return send(context.getSource(), message, args);
+	public static ChatMessageBuilder<?> builder(boolean prefix) {
+		return new ChatMessageBuilder<>(prefix);
 	}
 
-	public static int send(TestsuiteSender audience, String message, Object... args) {
-		return send(audience, Component.text(format(message, args)));
+	public static ChatMessageBuilder<?> builder(TestsuiteServer instance) {
+		return new ChatMessageBuilder<>(instance);
 	}
 
-	public static int send(TestsuiteSender audience, Component component) {
-		audience.sendMessage(PREFIX.append(component.colorIfAbsent(Color.GRAY)));
-		return Command.SINGLE_SUCCESS;
+	public static ChatMessageBuilder<?> builder(boolean prefix, TestsuiteServer instance) {
+		return new ChatMessageBuilder<>(prefix, instance);
+	}
+
+	public static int send(CommandContext<TestsuiteSender> sender, Consumer<ChatMessageBuilder<?>> builder) {
+		return Chat.send(sender.getSource(), builder);
+	}
+
+	public static int send(TestsuiteSender sender, Consumer<ChatMessageBuilder<?>> builder) {
+		ChatMessageSenderBuilder chatMessageBuilder = new ChatMessageSenderBuilder(sender);
+		builder.accept(chatMessageBuilder);
+		return chatMessageBuilder.send();
 	}
 
 	public static String format(String message, Object... args) {
@@ -62,6 +74,7 @@ public class Chat {
 
 	public static class Color {
 
+		public static final TextColor DARK_GRAY = TextColor.color(100, 100, 120);
 		public static final TextColor GRAY = TextColor.color(180, 180, 200);
 		public static final TextColor RED = TextColor.color(200, 40, 40);
 		public static final TextColor DARK_GREEN = TextColor.color(60, 180, 60);

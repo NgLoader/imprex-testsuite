@@ -41,20 +41,20 @@ public class CommandDisableIdleTimeout {
 		ServerInstance server = this.serverManager.getServer(serverName);
 
 		if (server == null) {
-			Chat.send(context, "Server was not found!");
+			Chat.builder().append("Server was not found!").send(context);
 			return Command.SINGLE_SUCCESS;
 		}
 
 		if (server.getTemplate() == null) {
-			Chat.send(context, "Only template server have a idle timeout!");
+			Chat.builder(server).append("Only template server have a idle timeout!").send(context);
 			return Command.SINGLE_SUCCESS;
 		}
 
 		if (server.toggleIdleTimeout()) {
 			server.resetInactiveTime();
-			Chat.send(context, "Idle timeout was enabled for {0}", server.getName());
+			Chat.builder(server).append("Idle timeout was enabled for {0}", server.getName()).send(context);
 		} else {
-			Chat.send(context, "Idle timeout was disabled for {0}", server.getName());
+			Chat.builder(server).append("Idle timeout was disabled for {0}", server.getName()).send(context);
 		}
 		return Command.SINGLE_SUCCESS;
 	}

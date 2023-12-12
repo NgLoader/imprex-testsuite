@@ -84,7 +84,7 @@ public class ServerManager implements Runnable {
 						instance = new ServerInstance(this, server);
 						this.serverInstances.put(identifier, instance);
 
-						TestsuiteLogger.broadcast("Detected server instance \"{0}\"", instance.getName());
+						instance.notifyMessage("Detected server instance");
 					} else {
 						instance.updateStats(server.retrieveUtilization().execute());
 					}
@@ -109,17 +109,18 @@ public class ServerManager implements Runnable {
 
 						this.serverInstallation.remove(identifier);
 						if (instance.getTemplate() == null) {
-							TestsuiteLogger.broadcast("[{0}] Installing skipped. No template!", instance.getName());
+							instance.notifyMessage("Installing skipped. No template!");
 							continue;
 						}
 
-						TestsuiteLogger.broadcast("[{0}] Installing template...", instance.getName());
-						instance.setupServer().whenComplete((__, error) -> {
+						final ServerInstance finalInstance = instance;
+						finalInstance.notifyMessage("Installing template...");
+						finalInstance.setupServer().whenComplete((__, error) -> {
 							if (error != null) {
-								TestsuiteLogger.error(error, "[{0}] Install failed!", server.getName());
-								TestsuiteLogger.broadcast("[{0}] Install failed!", server.getName());
+								TestsuiteLogger.error(error, "Install failed!");
+								finalInstance.notifyMessage("Install failed!");
 							} else {
-								TestsuiteLogger.broadcast("[{0}] Installed.", server.getName());
+								finalInstance.notifyMessage("Installed.");
 							}
 						});
 					}

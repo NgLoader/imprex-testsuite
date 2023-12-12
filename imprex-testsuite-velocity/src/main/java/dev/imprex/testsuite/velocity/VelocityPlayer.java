@@ -7,7 +7,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.velocitypowered.api.proxy.Player;
-import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.proxy.ServerConnection;
 import com.velocitypowered.api.proxy.server.RegisteredServer;
 
@@ -18,7 +17,7 @@ import net.kyori.adventure.text.Component;
 
 public class VelocityPlayer implements TestsuitePlayer {
 
-	static ProxyServer proxy;
+	static VelocityPlugin plugin;
 
 	private static final Map<String, TestsuitePlayer> CACHE = new ConcurrentHashMap<>();
 
@@ -51,7 +50,7 @@ public class VelocityPlayer implements TestsuitePlayer {
 
 	@Override
 	public CompletableFuture<ConnectionResult> connect(TestsuiteServer server) {
-		Optional<RegisteredServer> proxyServer = VelocityServer.proxy.getServer(server.getName());
+		Optional<RegisteredServer> proxyServer = VelocityPlayer.plugin.getProxy().getServer(server.getName());
 		if (proxyServer.isEmpty()) {
 			return CompletableFuture.completedFuture(ConnectionResult.CONNECTION_CANCELLED);
 		}
@@ -99,7 +98,7 @@ public class VelocityPlayer implements TestsuitePlayer {
 			return null;
 		}
 
-		return VelocityServer.get(server.get());
+		return VelocityPlayer.plugin.getServer(server.get().getServerInfo().getName());
 	}
 
 }

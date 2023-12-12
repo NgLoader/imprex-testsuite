@@ -6,6 +6,8 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
+import dev.imprex.testsuite.override.OverrideAction;
+
 public class ServerTemplate {
 
 	private final Path path;
@@ -19,16 +21,18 @@ public class ServerTemplate {
 	public List<Path> getFiles() {
 		List<Path> files = new ArrayList<>();
 		try {
-			Files.walk(this.path).forEach(file -> {
-				if (this.path.equals(file)) {
-					return;
-				}
-
-				files.add(file);
-			});
+			Files.walk(this.path)
+				.filter(file -> !this.path.equals(file))
+				.filter(file -> {
+					boolean isRootPath = this.path.equals(file.getParent());
+					boolean isFilenameOverride = file.getFileName().toString().equals(OverrideAction.OVERRIDE_FILE_NAME);
+					return !(isRootPath && isFilenameOverride);
+				})
+				.forEach(files::add);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		System.out.println(files.toString());
 		return files;
 	}
 

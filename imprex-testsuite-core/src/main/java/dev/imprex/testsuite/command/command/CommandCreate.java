@@ -63,41 +63,41 @@ public class CommandCreate {
 
 		ServerType serverType = ServerType.fromName(context.getArgument("type", String.class));
 		if (serverType == null) {
-			Chat.send(context, "Invalid server type");
+			Chat.send(context, builder -> builder.append("Invalid server type"));
 			return Command.SINGLE_SUCCESS;
 		}
 
 		String version = context.getArgument("version", String.class);
 		if (!this.versionCache.getVersionList(serverType).contains(version)) {
-			Chat.send(context, "Invalid version");
+			Chat.send(context, builder -> builder.append("Invalid version"));
 		}
 
-		Chat.send(context, "Creating server " + (template != null ? "template " + template.getName() : name) + "...");
+		Chat.send(context, builder -> builder.append("Creating server " + (template != null ? "template " + template.getName() : name) + "..."));
 		if (template != null) {
 			String serverName = String.format("%s-%s-%s", template.getName(), serverType.name().toLowerCase(), version);
 			if (this.serverManager.getServer(serverName) != null) {
-				Chat.send(context, "Template aready exist!");
+				Chat.send(context, builder -> builder.append("Template aready exist"));
 				return Command.SINGLE_SUCCESS;
 			}
 
 			this.serverManager.create(template, serverType, version).whenComplete((__, error) -> {
 				if (error != null) {
 					error.printStackTrace();
-					Chat.send(context, "Created failed! " + error.getMessage());
+					Chat.send(context, builder -> builder.append("Created failed! " + error.getMessage()));
 					return;
 				}
 
-				Chat.send(context, "Created success");
+				Chat.send(context, builder -> builder.append("Created success"));
 			});
 		} else {
 			this.serverManager.create(name, serverType, version).whenComplete((__, error) -> {
 				if (error != null) {
 					error.printStackTrace();
-					Chat.send(context, "Created failed! " + error.getMessage());
+					Chat.send(context, builder -> builder.append("Created failed! " + error.getMessage()));
 					return;
 				}
 
-				Chat.send(context, "Created success");
+				Chat.send(context, builder -> builder.append("Created success"));
 			});
 		}
 		return Command.SINGLE_SUCCESS;

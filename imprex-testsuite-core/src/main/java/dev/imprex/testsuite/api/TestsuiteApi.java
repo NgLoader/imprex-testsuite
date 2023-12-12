@@ -11,11 +11,9 @@ public interface TestsuiteApi {
 
 	List<TestsuitePlayer> getPlayers();
 
-	TestsuiteServer getServer(String name);
+	List<TestsuitePlayer> getPlayers(TestsuiteServer server);
 
-	TestsuiteServer createServer(String name, String ip, int port);
+	void registerServerList(TestsuiteServer server);
 
-	boolean deleteServer(String name);
-
-	List<TestsuiteServer> getServers();
+	boolean unregisterServerList(String name);
 }

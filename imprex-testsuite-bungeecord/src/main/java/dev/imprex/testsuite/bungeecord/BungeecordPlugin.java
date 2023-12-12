@@ -1,7 +1,5 @@
 package dev.imprex.testsuite.bungeecord;
 
-import com.google.common.eventbus.Subscribe;
-
 import dev.imprex.testsuite.TestsuiteLogger;
 import dev.imprex.testsuite.TestsuitePlugin;
 import dev.imprex.testsuite.server.ServerInstance;
@@ -10,16 +8,20 @@ import net.md_5.bungee.api.connection.Server;
 import net.md_5.bungee.api.event.PlayerDisconnectEvent;
 import net.md_5.bungee.api.event.PostLoginEvent;
 import net.md_5.bungee.api.event.ServerConnectedEvent;
+import net.md_5.bungee.api.plugin.Listener;
 import net.md_5.bungee.api.plugin.Plugin;
 import net.md_5.bungee.api.plugin.PluginManager;
+import net.md_5.bungee.event.EventHandler;
 
-public class BungeecordPlugin extends Plugin {
+public class BungeecordPlugin extends Plugin implements Listener {
 
+	static BungeecordPlugin plugin;
 	static BungeeAudiences audiences;
 
 	private final TestsuitePlugin testsuite = new TestsuitePlugin();
 
 	public BungeecordPlugin() {
+		BungeecordPlugin.plugin = this;
 	}
 
 	@Override
@@ -47,6 +49,8 @@ public class BungeecordPlugin extends Plugin {
 							literal,
 							command.aliases().toArray(String[]::new)));
 				});
+
+		pluginManager.registerListener(this, this);
 	}
 
 	@Override
@@ -55,7 +59,7 @@ public class BungeecordPlugin extends Plugin {
 		BungeecordPlugin.audiences.close();
 	}
 
-	@Subscribe
+	@EventHandler
 	public void onServerConnected(ServerConnectedEvent event) {
 		Server server = event.getPlayer().getServer();
 		if (server != null) {
@@ -69,13 +73,17 @@ public class BungeecordPlugin extends Plugin {
 		}
 	}
 
-	@Subscribe
+	@EventHandler
 	public void onPostLogin(PostLoginEvent event) {
 		BungeecordPlayer.add(event.getPlayer());
 	}
 
-	@Subscribe
+	@EventHandler
 	public void onPlayerDisconnect(PlayerDisconnectEvent event) {
 		BungeecordPlayer.remove(event.getPlayer());
+	}
+
+	public TestsuitePlugin getTestsuite() {
+		return this.testsuite;
 	}
 }

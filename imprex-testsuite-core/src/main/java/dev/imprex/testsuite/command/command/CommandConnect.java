@@ -15,6 +15,7 @@ import dev.imprex.testsuite.api.TestsuiteSender;
 import dev.imprex.testsuite.api.TestsuiteServer;
 import dev.imprex.testsuite.command.suggestion.CommandSuggestion;
 import dev.imprex.testsuite.util.Chat;
+import dev.imprex.testsuite.util.ChatMessageBuilder.ChatMessageSenderBuilder;
 
 public class CommandConnect {
 
@@ -29,7 +30,7 @@ public class CommandConnect {
 	public LiteralArgumentBuilder<TestsuiteSender> create() {
 		return literal("connect")
 				.requires(sender -> sender instanceof TestsuitePlayer)
-				.executes(command -> Chat.send(command, "Please enter a server name"))
+				.executes(command -> Chat.send(command, builder -> builder.append("Please enter a server name")))
 				.then(
 					argument("name", StringArgumentType.string())
 					.suggests(this.suggestion.server()
@@ -47,27 +48,31 @@ public class CommandConnect {
 	public int connectServer(CommandContext<TestsuiteSender> context) {
 		String serverName = context.getArgument("name", String.class);
 		TestsuiteServer server = this.plugin.getServer(serverName);
+		ChatMessageSenderBuilder chatMessageBuilder = Chat.builder(server).sender(context);
+		
 		if (server == null) {
-			Chat.send(context, "Unable to find server \"{0}\"", serverName);
-			return Command.SINGLE_SUCCESS;
+			chatMessageBuilder.append("Unable to find server \"{0}\"", serverName);
+			return chatMessageBuilder.send();
 		}
 
 		if (server.getPlayers().contains(context.getSource())) {
-			Chat.send(context, "Your already connected to this server!");
-			return Command.SINGLE_SUCCESS;
+			chatMessageBuilder.append("Your already connected to this server!");
+			return chatMessageBuilder.send();
 		}
 
 		((TestsuitePlayer) context.getSource()).connect(server);
-		Chat.send(context, "Connecting to \"{0}\"", server.getName());
-		return Command.SINGLE_SUCCESS;
+		chatMessageBuilder.append("Connecting to \"{0}\"", server.getName());
+		return chatMessageBuilder.send();
 	}
 
 	public int connectPlayer(CommandContext<TestsuiteSender> context) {
 		String serverName = context.getArgument("name", String.class);
 		TestsuiteServer server = this.plugin.getServer(serverName);
+		ChatMessageSenderBuilder chatSender = Chat.builder(server).sender(context);
+
 		if (server == null) {
-			Chat.send(context, "Unable to find server \"{0}\"", serverName);
-			return Command.SINGLE_SUCCESS;
+			chatSender.append("Unable to find server \"{0}\"", serverName);
+			return chatSender.send();
 		}
 
 		String executorName = context.getSource() instanceof TestsuitePlayer executor ? executor.getName() : "CONSOLE";
@@ -82,24 +87,24 @@ public class CommandConnect {
 
 				sendCount++;
 				targetPlayer.connect(server);
-				Chat.send(targetPlayer, "{0} sending you to \"{1}\"", executorName, server.getName());
+				Chat.builder(server).append("{0} sending you to \"{1}\"", executorName, server.getName()).send(targetPlayer);
 			}
-			Chat.send(context, "Connecting {0} players to \"{1}\"", sendCount, server.getName());
+			chatSender.append("Connecting {0} players to \"{1}\"", sendCount, server.getName()).send();
 		} else {
 			TestsuitePlayer targetPlayer = this.plugin.getPlayer(playername);
 			if (targetPlayer == null) {
-				Chat.send(context, "Unable to find player {0}!", playername);
+				chatSender.append("Unable to find player {0}!", playername).send();
 				return Command.SINGLE_SUCCESS;
 			}
 
 			if (server.getPlayers().contains(targetPlayer)) {
-				Chat.send(context, "{0} is already connected to this server!", targetPlayer.getName());
+				chatSender.server(server).append("{0} is already connected to this server!", targetPlayer.getName()).send();
 				return Command.SINGLE_SUCCESS;
 			}
 
 			targetPlayer.connect(server);
-			Chat.send(context, "Connecting {0} to \"{1}\"", targetPlayer.getName(), server.getName());
-			Chat.send(targetPlayer, "{0} is sending you to \"{1}\"", executorName, server.getName());
+			chatSender.append("Connecting {0} to \"{1}\"", targetPlayer.getName(), server.getName()).send();
+			Chat.builder(server).append("{0} is sending you to \"{1}\"", executorName, server.getName()).send(targetPlayer);
 		}
 		return Command.SINGLE_SUCCESS;
 	}

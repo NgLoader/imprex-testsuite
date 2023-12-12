@@ -36,17 +36,17 @@ public class CommandDelete {
 		String serverName = context.getArgument("name", String.class);
 		ServerInstance server = this.serverManager.getServer(serverName);
 		if (server == null) {
-			Chat.send(context, "Server was not found!");
+			Chat.send(context, builder -> builder.append("Server was not found!"));
 			return Command.SINGLE_SUCCESS;
 		}
 
-		Chat.send(context, "Deleting server {0}...", server.getName());
+		Chat.send(context, builder -> builder.append("Deleting server {0}...", server.getName()));
 		server.delete().whenComplete((__, error) -> {
 			if (error != null) {
 				error.printStackTrace();
-				Chat.send(context, "Server {0} is unable to delete! {1}", server.getName(), error.getMessage());
+				Chat.send(context, builder -> builder.server(server).append("Server {0} is unable to delete! {1}", server.getName(), error.getMessage()));
 			} else {
-				Chat.send(context, "Server {0} deleted.", server.getName());
+				Chat.send(context, builder -> builder.server(server).append("Server {0} deleted.", server.getName()));
 			}
 		});
 		return Command.SINGLE_SUCCESS;

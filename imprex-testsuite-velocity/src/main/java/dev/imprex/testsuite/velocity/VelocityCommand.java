@@ -16,7 +16,6 @@ import dev.imprex.testsuite.TestsuitePlugin;
 import dev.imprex.testsuite.api.TestsuiteSender;
 import dev.imprex.testsuite.command.CommandRegistry;
 import dev.imprex.testsuite.util.Chat;
-import net.kyori.adventure.text.Component;
 
 public class VelocityCommand implements SimpleCommand {
 
@@ -49,7 +48,7 @@ public class VelocityCommand implements SimpleCommand {
 			// Ignore syntax exceptions
 		} catch (Exception e) {
 			e.printStackTrace();
-			Chat.send(sender, Component.text("Error occurred by executing the command!"));
+			Chat.send(sender, builder -> builder.append("Error occurred by executing the command!"));
 		}
 	}
 

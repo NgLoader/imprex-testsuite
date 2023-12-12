@@ -15,7 +15,6 @@ import dev.imprex.testsuite.TestsuitePlugin;
 import dev.imprex.testsuite.api.TestsuiteSender;
 import dev.imprex.testsuite.command.CommandRegistry;
 import dev.imprex.testsuite.util.Chat;
-import net.kyori.adventure.text.Component;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.plugin.Command;
@@ -37,7 +36,7 @@ public class BungeecordCommand extends Command implements TabExecutor {
 	private CommandDispatcher<TestsuiteSender> dispatcher;
 
 	public BungeecordCommand(TestsuitePlugin plugin, Function<String, String> prefix, String command, String... aliases) {
-		super(command, "A testsuite command", aliases);
+		super(command, null, aliases);
 		this.prefix = prefix;
 		this.commandRegistry = plugin.getCommandRegistry();
 		this.dispatcher = this.commandRegistry.getDispatcher();
@@ -53,7 +52,7 @@ public class BungeecordCommand extends Command implements TabExecutor {
 			// Ignore syntax exceptions
 		} catch (Exception e) {
 			e.printStackTrace();
-			Chat.send(testsuiteSender, Component.text("Error occurred by executing the command!"));
+			Chat.send(testsuiteSender, builder -> builder.append("Error occurred by executing the command!"));
 		}
 	}
 

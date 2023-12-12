@@ -30,9 +30,17 @@ public class TestsuiteVisual implements Runnable {
 				continue;
 			}
 
+			int playerCount = instance.getPlayers().size();
 			component = component
 					.append(Component.text(instance.getName())
 						.color(Chat.Color.statusColor(instance)))
+					.appendSpace()
+					.append(Component.text("(")
+							.color(Chat.Color.DARK_GRAY))
+					.append(Component.text(playerCount)
+							.color(playerCount > 0 ? Chat.Color.LIGHT_GREEN : Chat.Color.GRAY))
+					.append(Component.text(")")
+							.color(Chat.Color.DARK_GRAY))
 					.append(componentSpacer);
 		}
 

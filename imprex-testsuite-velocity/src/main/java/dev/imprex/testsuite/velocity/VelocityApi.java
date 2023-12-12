@@ -1,11 +1,13 @@
 package dev.imprex.testsuite.velocity;
 
 import java.net.InetSocketAddress;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
+import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.proxy.server.RegisteredServer;
 import com.velocitypowered.api.proxy.server.ServerInfo;
@@ -46,36 +48,50 @@ public class VelocityApi implements TestsuiteApi {
 	}
 
 	@Override
-	public TestsuiteServer getServer(String name) {
-		return VelocityServer.get(name);
+	public List<TestsuitePlayer> getPlayers(TestsuiteServer server) {
+		Optional<RegisteredServer> serverOptional = this.proxy.getServer(server.getName().toLowerCase());
+		if (serverOptional.isEmpty()) {
+			return Collections.emptyList();
+		}
+
+		return serverOptional.get().getPlayersConnected().stream()
+				.map(Player::getUsername)
+				.map(this::getPlayer)
+				.toList();
 	}
 
 	@Override
-	public TestsuiteServer createServer(String name, String ip, int port) {
+	public void registerServerList(TestsuiteServer server) {
+		String name = server.getName().toLowerCase();
+		String ip = server.getAddress();
+		int port = server.getPort();
+
+		Optional<RegisteredServer> serverOptional = this.proxy.getServer(name);
+		if (serverOptional.isPresent()) {
+			RegisteredServer registeredServer = serverOptional.get();
+			ServerInfo serverInfo = registeredServer.getServerInfo();
+			InetSocketAddress socketAddress = serverInfo.getAddress();
+
+			if (socketAddress.getHostName().equalsIgnoreCase(ip) &&
+					socketAddress.getPort() == port) {
+				return;
+			}
+
+			this.unregisterServerList(name);
+		}
+
 		ServerInfo serverInfo = new ServerInfo(name, new InetSocketAddress(ip, port));
-		RegisteredServer registeredServer = this.proxy.registerServer(serverInfo);
-		VelocityServer.add(registeredServer);
-		return VelocityServer.get(serverInfo);
+		this.proxy.registerServer(serverInfo);
 	}
 
 	@Override
-	public boolean deleteServer(String name) {
-		Optional<RegisteredServer> server = this.proxy.getServer(name);
+	public boolean unregisterServerList(String name) {
+		Optional<RegisteredServer> server = this.proxy.getServer(name.toLowerCase());
 		if (server.isPresent()) {
 			RegisteredServer registeredServer = server.get();
-			VelocityServer.remove(registeredServer);
 			this.proxy.unregisterServer(registeredServer.getServerInfo());
 			return true;
 		}
 		return false;
-	}
-
-	@Override
-	public List<TestsuiteServer> getServers() {
-		return this.proxy.getAllServers().stream()
-				.map(RegisteredServer::getServerInfo)
-				.map(VelocityServer::get)
-				.filter(Objects::nonNull)
-				.toList();
 	}
 }

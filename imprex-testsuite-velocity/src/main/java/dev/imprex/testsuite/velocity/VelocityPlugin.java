@@ -35,8 +35,7 @@ public class VelocityPlugin extends TestsuitePlugin {
 	public VelocityPlugin(ProxyServer proxy, Logger logger, @DataDirectory Path dataFolder) {
 		super.load(new VelocityLogger(logger), dataFolder);
 
-		VelocityPlayer.proxy = proxy;
-		VelocityServer.proxy = proxy;
+		VelocityPlayer.plugin = this;
 	}
 
 	@Subscribe

@@ -39,21 +39,21 @@ public class CommandStart {
 		String serverName = context.getArgument("name", String.class);
 		ServerInstance server = this.serverManager.getServer(serverName);
 		if (server == null) {
-			Chat.send(context, "Server was not found!");
+			Chat.builder().append("Server was not found!").send(context);
 			return Command.SINGLE_SUCCESS;
 		}
 
 		if (server.getStatus() != UtilizationState.OFFLINE) {
-			Chat.send(context, "Server {0} is not offline!", server.getName());
+			Chat.builder(server).append("Server is not offline!").send(context);
 			return Command.SINGLE_SUCCESS;
 		}
 
-		Chat.send(context, "Starting server {0}...", server.getName());
+		Chat.builder(server).append("Requesting start...").send(context);
 		server.start().whenComplete((__, error) -> {
 			if (error != null) {
-				Chat.send(context, "Server {0} is unable to start! {1}", server.getName(), error.getMessage());
+				Chat.builder(server).append("Server is unable to start! {0}", error.getMessage()).send(context);
 			} else {
-				Chat.send(context, "Server {0} started", server.getName());
+				Chat.builder(server).append("Starting server").send(context);
 			}
 		});
 		return Command.SINGLE_SUCCESS;

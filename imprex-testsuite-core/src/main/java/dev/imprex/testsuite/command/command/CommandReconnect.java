@@ -31,18 +31,18 @@ public class CommandReconnect {
 
 		TestsuiteServer lobby = this.plugin.getServer("lobby");
 		if (lobby == null) {
-			Chat.send(player, "Unable to find lobby server!");
+			Chat.builder().append("Unable to find lobby server!").send(player);
 			return Command.SINGLE_SUCCESS;
 		}
 
 		TestsuiteServer serverConnection = player.getServer();
 		if (serverConnection == null) {
-			Chat.send(player, "Unable to find current server!");
+			Chat.builder().append("Unable to find current server!").send(player);
 			return Command.SINGLE_SUCCESS;
 		}
 
 		if (lobby.equals(serverConnection)) {
-			Chat.send(player, "You can only reconnect on non lobby servers!");
+			Chat.builder().append("You can only reconnect on non lobby servers!").send(player);
 			return Command.SINGLE_SUCCESS;
 		}
 
@@ -56,9 +56,9 @@ public class CommandReconnect {
 				error.printStackTrace();
 
 				if (lobby == null) {
-					Chat.send(player, "Unable to connect back! " + error.getMessage());
+					Chat.builder().append("Unable to connect back! " + error.getMessage()).send(player);
 				} else {
-					Chat.send(player, "Unable to connect too lobby server! " + error.getMessage());
+					Chat.builder().append("Unable to connect too lobby server! " + error.getMessage()).send(player);
 				}
 				return;
 			}
@@ -66,15 +66,15 @@ public class CommandReconnect {
 			switch (result) {
 			case SUCCESS -> {
 				if (lobby == null) {
-					Chat.send(player, "Successful reconnected.");
+					Chat.builder().append("Successful reconnected.").send(player);
 				} else {
 					this.reconnectPlayer(player, null, current);
 				}
 			}
-			case ALREADY_CONNECTED -> Chat.send(player, "Your already connected");
-			case CONNECTION_CANCELLED -> Chat.send(player, "Connection was cancelled");
-			case CONNECTION_IN_PROGRESS -> Chat.send(player, "Connection is in progress");
-			case SERVER_DISCONNECTED -> Chat.send(player, "Server disconnected");
+			case ALREADY_CONNECTED -> Chat.builder().append("Your already connected").send(player);
+			case CONNECTION_CANCELLED -> Chat.builder().append("Connection was cancelled").send(player);
+			case CONNECTION_IN_PROGRESS -> Chat.builder().append("Connection is in progress").send(player);
+			case SERVER_DISCONNECTED -> Chat.builder().append("Server disconnected").send(player);
 			}
 		});
 	}

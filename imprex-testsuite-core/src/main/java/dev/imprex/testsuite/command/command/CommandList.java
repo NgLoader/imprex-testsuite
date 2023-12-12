@@ -57,7 +57,7 @@ public class CommandList {
 		if (name != null) {
 			template = this.templateList.getTemplate(name);
 			if (template == null) {
-				Chat.send(context, "Unable to find template {0}", name);
+				Chat.builder().append("Unable to find template {0}", name).send(context);
 				return Command.SINGLE_SUCCESS;
 			}
 		}
@@ -77,8 +77,7 @@ public class CommandList {
 
 			Component serverInfo = Component.text("  - ")
 					.color(Chat.Color.GRAY)
-					.append(Component.text(server.getName())
-							.color(Chat.Color.statusColor(server)));
+					.append(Chat.builder(false, server).build().color(Chat.Color.statusColor(server)));
 
 			Component serverAction;
 			if (server.getStatus() == UtilizationState.OFFLINE) {
@@ -90,7 +89,7 @@ public class CommandList {
 			} else if (server.getStatus() != UtilizationState.STOPPING) {
 				Component playerCount = Component.text("(")
 						.color(Chat.Color.GRAY)
-						.append(Component.text(server.getCurrentServer().getPlayers().size())
+						.append(Component.text(server.getPlayers().size())
 								.color(Chat.Color.LIGHT_GREEN)
 								.hoverEvent(HoverEvent.showText(Component.text("Player count")
 										.color(Chat.Color.LIGHT_GREEN))))
@@ -117,7 +116,7 @@ public class CommandList {
 
 				if (context.getSource() instanceof TestsuitePlayer player) {
 					TestsuiteServer playerServer = player.getServer();
-					if (playerServer == null || !playerServer.equals(server.getCurrentServer())) {
+					if (playerServer == null || !playerServer.equals(server)) {
 						serverAction = serverAction
 								.appendSpace()
 								.append(connectServer);

@@ -37,17 +37,17 @@ public class CommandSetup {
 		String serverName = context.getArgument("name", String.class);
 		ServerInstance server = this.serverManager.getServer(serverName);
 		if (server == null) {
-			Chat.send(context, "Server was not found!");
+			Chat.builder().append("Server was not found!").send(context);
 			return Command.SINGLE_SUCCESS;
 		}
 
-		Chat.send(context, "Setup server {0}...", server.getName());
+		Chat.builder(server).append("Requesting setup...").send(context);
 		server.setupServer().whenComplete((__, error) -> {
 			if (error != null) {
 				error.printStackTrace();
-				Chat.send(context, "Server {0} is unable to setup! {1}", server.getName(), error.getMessage());
+				Chat.builder(server).append("Server is unable to setup! {0}", error.getMessage()).send(context);
 			} else {
-				Chat.send(context, "Server {0} was setup.", server.getName());
+				Chat.builder(server).append("Server was setup.").send(context);
 			}
 		});
 		return Command.SINGLE_SUCCESS;

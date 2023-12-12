@@ -1,6 +1,7 @@
 package de.imprex.testsuite.local;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -51,24 +52,22 @@ public class LocalApi implements TestsuiteApi {
 	}
 
 	@Override
-	public TestsuiteServer getServer(String name) {
-		return this.serverCache.get(name);
+	public List<TestsuitePlayer> getPlayers(TestsuiteServer server) {
+		return Collections.emptyList();
 	}
 
 	@Override
-	public TestsuiteServer createServer(String name, String ip, int port) {
-		return this.serverCache.computeIfAbsent(name, value -> new LocalServer(name, ip, port));
+	public void registerServerList(TestsuiteServer server) {
+		String identifier = server.getIdentifier();
+		String name = server.getName().toLowerCase();
+		String ip = server.getAddress();
+		int port = server.getPort();
+
+		this.serverCache.computeIfAbsent(name, value -> new LocalServer(identifier, name, ip, port));
 	}
 
 	@Override
-	public boolean deleteServer(String name) {
+	public boolean unregisterServerList(String name) {
 		return this.serverCache.remove(name) != null;
-	}
-
-	@Override
-	public List<TestsuiteServer> getServers() {
-		return this.serverCache.values().stream()
-				.filter(Objects::nonNull)
-				.toList();
 	}
 }
