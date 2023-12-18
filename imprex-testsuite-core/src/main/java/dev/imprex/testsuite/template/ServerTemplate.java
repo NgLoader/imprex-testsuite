@@ -32,7 +32,6 @@ public class ServerTemplate {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		System.out.println(files.toString());
 		return files;
 	}
 

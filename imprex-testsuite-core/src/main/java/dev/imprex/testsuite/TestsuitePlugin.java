@@ -76,6 +76,7 @@ public class TestsuitePlugin implements TestsuiteApi {
 		// Start scheduler
 		this.scheduleTask(this.versionCache, 1, 1, TimeUnit.MINUTES);
 		this.scheduleTask(this.serverManager, 1, 1, TimeUnit.SECONDS);
+		this.scheduleTask(this.templateList, 10, 10, TimeUnit.SECONDS);
 		this.scheduleTask(this.testsuiteVisual, 4, 4, TimeUnit.SECONDS);
 
 		// Register commands

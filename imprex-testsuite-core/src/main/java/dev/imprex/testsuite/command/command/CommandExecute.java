@@ -50,14 +50,14 @@ public class CommandExecute {
 			command = command.substring(1);
 		}
 
-		Chat.builder(server).append("Executing command on {0}...", server.getName()).send(context);
+		Chat.builder(server).append("Executing command...", server.getName()).send(context);
 		server.executeCommand(command).whenComplete((__, error) -> {
 			if (error != null) {
 				Chat.builder(server)
-						.append("Server {0} is unable to execute command! {1}", server.getName(), error.getMessage())
+						.append("Unable to execute command! {0}", error.getMessage())
 						.send(context);
 			} else {
-				Chat.builder(server).append("Server {0} executed command.", server.getName()).send(context);
+				Chat.builder(server).append("Executed command.").send(context);
 			}
 		});
 		return Command.SINGLE_SUCCESS;

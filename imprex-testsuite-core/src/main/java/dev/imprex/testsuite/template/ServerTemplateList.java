@@ -11,7 +11,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import dev.imprex.testsuite.TestsuiteLogger;
 import dev.imprex.testsuite.TestsuitePlugin;
 
-public class ServerTemplateList {
+public class ServerTemplateList implements Runnable {
 
 	private final Path templatePath;
 
@@ -19,10 +19,11 @@ public class ServerTemplateList {
 
 	public ServerTemplateList(TestsuitePlugin plugin, Path templatePath) {
 		this.templatePath = templatePath;
-		this.refreshTemplateList();
+
+		this.run();
 	}
 
-	public void refreshTemplateList() {
+	public void run() {
 		try {
 			Files.createDirectories(this.templatePath);
 

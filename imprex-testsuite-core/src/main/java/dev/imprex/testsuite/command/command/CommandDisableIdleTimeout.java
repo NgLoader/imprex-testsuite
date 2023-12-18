@@ -52,9 +52,9 @@ public class CommandDisableIdleTimeout {
 
 		if (server.toggleIdleTimeout()) {
 			server.resetInactiveTime();
-			Chat.builder(server).append("Idle timeout was enabled for {0}", server.getName()).send(context);
+			Chat.builder(server).append("Idle timeout was enabled").send(context);
 		} else {
-			Chat.builder(server).append("Idle timeout was disabled for {0}", server.getName()).send(context);
+			Chat.builder(server).append("Idle timeout was disabled").send(context);
 		}
 		return Command.SINGLE_SUCCESS;
 	}

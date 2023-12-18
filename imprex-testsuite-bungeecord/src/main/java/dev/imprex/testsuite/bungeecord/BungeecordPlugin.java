@@ -73,6 +73,14 @@ public class BungeecordPlugin extends Plugin implements Listener {
 		}
 	}
 
+//	@EventHandler
+//	public void onServerConnect(ServerConnectEvent event) {
+//		if (event.getPlayer().getServer() == null) {
+//			int clientVersion = event.getPlayer().getPendingConnection().getVersion();
+//			// TODO connect client version to right server version
+//		}
+//	}
+
 	@EventHandler
 	public void onPostLogin(PostLoginEvent event) {
 		BungeecordPlayer.add(event.getPlayer());
