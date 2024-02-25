@@ -47,7 +47,7 @@ public class BungeecordCommand extends Command implements TabExecutor {
 		TestsuiteSender testsuiteSender = BungeecordCommand.toTestsuiteSender(sender);
 
 		try {
-			this.dispatcher.execute(this.getCommand(args).trim(), testsuiteSender);
+			this.dispatcher.execute(this.toCommandString(args).trim(), testsuiteSender);
 		} catch (CommandSyntaxException e) {
 			// Ignore syntax exceptions
 		} catch (Exception e) {
@@ -59,7 +59,7 @@ public class BungeecordCommand extends Command implements TabExecutor {
 	@Override
 	public Iterable<String> onTabComplete(CommandSender sender, String[] args) {
 		TestsuiteSender testsuiteSender = BungeecordCommand.toTestsuiteSender(sender);
-		StringReader cursor = new StringReader(this.getCommand(args));
+		StringReader cursor = new StringReader(this.toCommandString(args));
 		if (cursor.canRead() && cursor.peek() == '/') {
 			cursor.skip();
 		}
@@ -77,7 +77,7 @@ public class BungeecordCommand extends Command implements TabExecutor {
 		return Collections.emptyList();
 	}
 
-	public String getCommand(String[] args) {
+	public String toCommandString(String[] args) {
 		return this.prefix.apply(String.join(" ", args));
 	}
 }

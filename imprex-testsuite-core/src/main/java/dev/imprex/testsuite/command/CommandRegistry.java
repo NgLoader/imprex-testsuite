@@ -70,7 +70,7 @@ public class CommandRegistry {
 			}
 
 			this.commands.put(alias, registration);
-			
+
 			// Handling in implementation
 //			this.dispatcher.register(literal(alias)
 //					.requires(literal.getRequirement())

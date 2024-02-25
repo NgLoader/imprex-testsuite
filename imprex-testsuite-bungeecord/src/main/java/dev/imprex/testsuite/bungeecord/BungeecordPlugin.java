@@ -1,9 +1,14 @@
 package dev.imprex.testsuite.bungeecord;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 import dev.imprex.testsuite.TestsuiteLogger;
 import dev.imprex.testsuite.TestsuitePlugin;
 import dev.imprex.testsuite.server.ServerInstance;
 import net.kyori.adventure.platform.bungeecord.BungeeAudiences;
+import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.connection.Server;
 import net.md_5.bungee.api.event.PlayerDisconnectEvent;
 import net.md_5.bungee.api.event.PostLoginEvent;
@@ -19,6 +24,8 @@ public class BungeecordPlugin extends Plugin implements Listener {
 	static BungeeAudiences audiences;
 
 	private final TestsuitePlugin testsuite = new TestsuitePlugin();
+
+	private final List<String> commandPrefixList = new ArrayList<String>();
 
 	public BungeecordPlugin() {
 		BungeecordPlugin.plugin = this;
@@ -37,12 +44,14 @@ public class BungeecordPlugin extends Plugin implements Listener {
 		// Register commands
 		PluginManager pluginManager = this.getProxy().getPluginManager();
 		pluginManager.registerCommand(this, new BungeecordCommand(this.testsuite, (args) -> args, "testsuite", "ts", "tests", "tsuite"));
+		this.commandPrefixList.addAll(Arrays.asList("testsuite", "ts", "tests", "tsuite"));
 
 		this.testsuite.getCommandRegistry().getCommands().values().stream()
 				.filter(command -> command.isRoot())
 				.forEach(command -> {
 					String literal = command.literal().getLiteral();
-					
+					this.commandPrefixList.add(literal);
+
 					pluginManager.registerCommand(this, new BungeecordCommand(
 							this.testsuite,
 							(args) -> literal + " " + args,
@@ -73,22 +82,22 @@ public class BungeecordPlugin extends Plugin implements Listener {
 		}
 	}
 
-//	@EventHandler
-//	public void onServerConnect(ServerConnectEvent event) {
-//		if (event.getPlayer().getServer() == null) {
-//			int clientVersion = event.getPlayer().getPendingConnection().getVersion();
-//			// TODO connect client version to right server version
-//		}
-//	}
-
 	@EventHandler
 	public void onPostLogin(PostLoginEvent event) {
-		BungeecordPlayer.add(event.getPlayer());
+		ProxiedPlayer player = event.getPlayer();
+		BungeecordPlayer bungeePlayer = BungeecordPlayer.add(player);
+		
+		// packet injection to use brigadier async and greedy string only reading last argument on tab complete
+		new BungeecordPacketInjector(plugin, bungeePlayer).inject();
 	}
 
 	@EventHandler
 	public void onPlayerDisconnect(PlayerDisconnectEvent event) {
 		BungeecordPlayer.remove(event.getPlayer());
+	}
+
+	public List<String> getCommandPrefixList() {
+		return this.commandPrefixList;
 	}
 
 	public TestsuitePlugin getTestsuite() {

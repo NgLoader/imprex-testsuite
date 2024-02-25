@@ -22,8 +22,10 @@ public class BungeecordPlayer implements TestsuitePlayer {
 
 	private static final Map<String, TestsuitePlayer> CACHE = new ConcurrentHashMap<>();
 
-	static void add(ProxiedPlayer player) {
-		BungeecordPlayer.CACHE.put(player.getName().toLowerCase(), new BungeecordPlayer(player));
+	static BungeecordPlayer add(ProxiedPlayer player) {
+		BungeecordPlayer bungeePlayer = new BungeecordPlayer(player);
+		BungeecordPlayer.CACHE.put(player.getName().toLowerCase(), bungeePlayer);
+		return bungeePlayer;
 	}
 
 	static void remove(ProxiedPlayer player) {
@@ -117,4 +119,7 @@ public class BungeecordPlayer implements TestsuitePlayer {
 		return BungeecordPlugin.plugin.getTestsuite().getServer(server.getInfo().getName());
 	}
 
+	public ProxiedPlayer getProxiedPlayer() {
+		return this.player;
+	}
 }
