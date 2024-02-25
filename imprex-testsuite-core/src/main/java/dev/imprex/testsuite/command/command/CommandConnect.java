@@ -8,11 +8,13 @@ import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.suggestion.SuggestionProvider;
 
 import dev.imprex.testsuite.TestsuitePlugin;
 import dev.imprex.testsuite.api.TestsuitePlayer;
 import dev.imprex.testsuite.api.TestsuiteSender;
 import dev.imprex.testsuite.api.TestsuiteServer;
+import dev.imprex.testsuite.command.ArgumentBuilder;
 import dev.imprex.testsuite.command.suggestion.CommandSuggestion;
 import dev.imprex.testsuite.util.Chat;
 import dev.imprex.testsuite.util.ChatMessageBuilder.ChatMessageSenderBuilder;
@@ -39,10 +41,24 @@ public class CommandConnect {
 					.executes(this::connectServer)
 					.then(
 							argument("player", StringArgumentType.string())
-							.suggests(this.suggestion.player()
-									.map(TestsuitePlayer::getName)
-									.buildSuggest("player"))
+							.suggests(this.suggestPlayers())
 							.executes(this::connectPlayer)));
+	}
+
+	public SuggestionProvider<TestsuiteSender> suggestPlayers() {
+		return (context, builder) -> {
+			this.suggestion.player()
+				.map(TestsuitePlayer::getName)
+				.buildSuggest("player")
+				.getSuggestions(context, builder);
+
+			String input = ArgumentBuilder.getSafeStringArgument(context, "player", "");
+			if ("all".startsWith(input)) {
+				builder.suggest("all");
+			}
+
+			return builder.buildFuture();
+		};
 	}
 
 	public int connectServer(CommandContext<TestsuiteSender> context) {
@@ -68,11 +84,10 @@ public class CommandConnect {
 	public int connectPlayer(CommandContext<TestsuiteSender> context) {
 		String serverName = context.getArgument("name", String.class);
 		TestsuiteServer server = this.plugin.getServer(serverName);
-		ChatMessageSenderBuilder chatSender = Chat.builder(server).sender(context);
 
 		if (server == null) {
-			chatSender.append("Unable to find server \"{0}\"", serverName);
-			return chatSender.send();
+			Chat.builder(server).append("Unable to find server \"{0}\"", serverName).send(context);
+			return Command.SINGLE_SUCCESS;
 		}
 
 		String executorName = context.getSource() instanceof TestsuitePlayer executor ? executor.getName() : "CONSOLE";
@@ -89,21 +104,22 @@ public class CommandConnect {
 				targetPlayer.connect(server);
 				Chat.builder(server).append("{0} sending you to \"{1}\"", executorName, server.getName()).send(targetPlayer);
 			}
-			chatSender.append("Connecting {0} players to \"{1}\"", sendCount, server.getName()).send();
+			
+			Chat.builder(server).append("Connecting {0} players to \"{1}\"", sendCount, server.getName()).send(context);
 		} else {
 			TestsuitePlayer targetPlayer = this.plugin.getPlayer(playername);
 			if (targetPlayer == null) {
-				chatSender.append("Unable to find player {0}!", playername).send();
+				Chat.builder(server).append("Unable to find player {0}!", playername).send(context);
 				return Command.SINGLE_SUCCESS;
 			}
 
 			if (server.getPlayers().contains(targetPlayer)) {
-				chatSender.server(server).append("{0} is already connected to this server!", targetPlayer.getName()).send();
+				Chat.builder(server).server(server).append("{0} is already connected to this server!", targetPlayer.getName()).send(context);
 				return Command.SINGLE_SUCCESS;
 			}
 
 			targetPlayer.connect(server);
-			chatSender.append("Connecting {0} to \"{1}\"", targetPlayer.getName(), server.getName()).send();
+			Chat.builder(server).append("Connecting {0} to \"{1}\"", targetPlayer.getName(), server.getName()).send(context);
 			Chat.builder(server).append("{0} is sending you to \"{1}\"", executorName, server.getName()).send(targetPlayer);
 		}
 		return Command.SINGLE_SUCCESS;
