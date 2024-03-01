@@ -76,8 +76,8 @@ public class BungeecordPacketInjector extends MessageToMessageDecoder<PacketWrap
 
 			cursor.setCursor(1);
 
-			System.out.println(tabCompletePacket.getCursor());
-			System.out.println(cursor.getRemaining());
+//			System.out.println(tabCompletePacket.getCursor());
+//			System.out.println(cursor.getRemaining());
 
 			ParseResults<TestsuiteSender> result = this.dispatcher.parse(cursor, this.player);
 			this.dispatcher.getCompletionSuggestions(result).whenComplete((suggestions, error) -> {
@@ -86,7 +86,7 @@ public class BungeecordPacketInjector extends MessageToMessageDecoder<PacketWrap
 					return;
 				}
 
-				System.out.println("Suggestions: " + suggestions.getList().size());
+//				System.out.println("Suggestions: " + suggestions.getList().size());
 				ProxiedPlayer proxiedPlayer = this.player.getProxiedPlayer();
 				if (proxiedPlayer.isConnected() && !suggestions.isEmpty()) {
 					proxiedPlayer.unsafe().sendPacket(new TabCompleteResponse(tabCompletePacket.getTransactionId(), suggestions));
