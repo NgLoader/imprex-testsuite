@@ -13,6 +13,8 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import com.mattmalec.pterodactyl4j.UtilizationState;
 import com.mattmalec.pterodactyl4j.client.entities.ClientServer;
+import com.mattmalec.pterodactyl4j.client.entities.Directory;
+import com.mattmalec.pterodactyl4j.client.entities.GenericFile;
 import com.mattmalec.pterodactyl4j.client.entities.Utilization;
 import com.mattmalec.pterodactyl4j.client.managers.WebSocketManager;
 import com.mattmalec.pterodactyl4j.entities.Allocation;
@@ -182,18 +184,28 @@ public class ServerInstance implements TestsuiteServer, Runnable {
 			return CompletableFuture.failedFuture(new NullPointerException("No template instance"));
 		}
 
-		return this.deletePluginFolder()
+		return this.deletePluginJars()
 				.thenCompose(__ -> this.uploadServerFiles());
 	}
 	
-	private CompletableFuture<Void> deletePluginFolder() {
+	private CompletableFuture<Void> deletePluginJars() {
 		return PteroUtil.execute(this.server.retrieveDirectory())
 				.thenApply(directory -> directory.getDirectoryByName("plugins"))
 				.thenCompose(optional -> {
 					if (optional.isEmpty()) {
 						return CompletableFuture.completedFuture(null);
 					}
-					return PteroUtil.execute(optional.get().delete());
+					
+					Directory directory = optional.get();
+					CompletableFuture<Void> future = new CompletableFuture<Void>();
+					
+					for (GenericFile file : directory.getFiles()) {
+						if (file.getName().endsWith(".jar")) {
+							future = future.thenAccept(__ -> PteroUtil.execute(file.delete()));
+						}
+					}
+					
+					return future;
 				});
 	}
 	
