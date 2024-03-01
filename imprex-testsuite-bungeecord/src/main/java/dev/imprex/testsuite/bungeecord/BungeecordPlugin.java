@@ -1,11 +1,14 @@
 package dev.imprex.testsuite.bungeecord;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+
+import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.tree.CommandNode;
 
 import dev.imprex.testsuite.TestsuiteLogger;
 import dev.imprex.testsuite.TestsuitePlugin;
+import dev.imprex.testsuite.api.TestsuiteSender;
 import dev.imprex.testsuite.server.ServerInstance;
 import net.kyori.adventure.platform.bungeecord.BungeeAudiences;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
@@ -43,21 +46,28 @@ public class BungeecordPlugin extends Plugin implements Listener {
 
 		// Register commands
 		PluginManager pluginManager = this.getProxy().getPluginManager();
-		pluginManager.registerCommand(this, new BungeecordCommand(this.testsuite, (args) -> args, "testsuite", "ts", "tests", "tsuite"));
-		this.commandPrefixList.addAll(Arrays.asList("testsuite", "ts", "tests", "tsuite"));
+		CommandDispatcher<TestsuiteSender> parentDispatcher = this.testsuite.getCommandRegistry().getDispatcher();
+		for (CommandNode<TestsuiteSender> node : parentDispatcher.getRoot().getChildren()) {
+			String literal = node.getName();
+			this.commandPrefixList.add(literal);
 
-		this.testsuite.getCommandRegistry().getCommands().values().stream()
-				.filter(command -> command.isRoot())
-				.forEach(command -> {
-					String literal = command.literal().getLiteral();
-					this.commandPrefixList.add(literal);
-
-					pluginManager.registerCommand(this, new BungeecordCommand(
-							this.testsuite,
-							(args) -> literal + " " + args,
-							literal,
-							command.aliases().toArray(String[]::new)));
-				});
+			pluginManager.registerCommand(this, new BungeecordCommand(
+					this.testsuite,
+					(args) -> literal + " " + args,
+					literal));
+		}
+		
+//		this.testsuite.getCommandRegistry().getCommands().values().stream()
+//				.filter(command -> command.isRoot())
+//				.forEach(command -> {
+//					String literal = command.literal().getLiteral();
+//					this.commandPrefixList.add(literal);
+//
+//					pluginManager.registerCommand(this, new BungeecordCommand(
+//							this.testsuite,
+//							(args) -> literal + " " + args,
+//							literal));
+//				});
 
 		pluginManager.registerListener(this, this);
 	}
