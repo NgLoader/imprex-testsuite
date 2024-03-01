@@ -182,20 +182,27 @@ public class ServerInstance implements TestsuiteServer, Runnable {
 			return CompletableFuture.failedFuture(new NullPointerException("No template instance"));
 		}
 
-		CompletableFuture<Void> future = new CompletableFuture<>();
-
+		return this.deletePluginFolder()
+				.thenCompose(__ -> this.uploadServerFiles());
+	}
+	
+	private CompletableFuture<Void> deletePluginFolder() {
+		return PteroUtil.execute(this.server.retrieveDirectory())
+				.thenApply(directory -> directory.getDirectoryByName("plugins"))
+				.thenCompose(optional -> {
+					if (optional.isEmpty()) {
+						return CompletableFuture.completedFuture(null);
+					}
+					return PteroUtil.execute(optional.get().delete());
+				});
+	}
+	
+	private CompletableFuture<Void> uploadServerFiles() {
 		List<Path> fileList = new CopyOnWriteArrayList<>(this.template.getFiles());
 		int pathPrefix = this.template.getPath().toString().length();
 
-		PteroUtil.updateDirectory(this.server, pathPrefix, fileList).whenComplete((__, error) -> {
-			if (error != null) {
-				future.completeExceptionally(error);
-			} else {
-				future.complete(null);
-			}
-			System.gc(); // TODO test phase (memory issue with pterodactyl4j api)
-		});
-		return future;
+		return PteroUtil.updateDirectory(server, pathPrefix, fileList)
+				.thenAccept(__ -> System.gc()); // TODO test phase (memory issue with pterodactyl4j api)
 	}
 
 	public CompletableFuture<Void> executeCommand(String command) {
@@ -254,6 +261,10 @@ public class ServerInstance implements TestsuiteServer, Runnable {
 
 	public void resetInactiveTime() {
 		this.inactiveTime.getAndSet(System.currentTimeMillis() + MAX_INACTIVE_TIME);
+	}
+	
+	public boolean setIdleTimeout(boolean state) {
+		return this.idleTimeout.compareAndSet(!state, state);
 	}
 
 	public boolean toggleIdleTimeout() {
