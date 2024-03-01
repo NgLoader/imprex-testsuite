@@ -21,6 +21,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+import dev.imprex.testsuite.TestsuiteLogger;
+
 public class ServerVersionCache implements Runnable {
 
 	private static final Gson GSON = new GsonBuilder()
@@ -47,15 +49,19 @@ public class ServerVersionCache implements Runnable {
 		}
 
 		for (ServerType serverType : ServerType.values()) {
-			Set<String> versionSet = ServerVersion.fetchVersionList(serverType);
-			if (versionSet == null) {
-				return;
-			}
+			try {
+				Set<String> versionSet = ServerVersion.fetchVersionList(serverType);
+				if (versionSet == null) {
+					return;
+				}
 
-			this.cache.computeIfAbsent(serverType, (key) -> new HashSet<>()).addAll(versionSet);
+				this.cache.computeIfAbsent(serverType, (key) -> new HashSet<>()).addAll(versionSet);
+			} catch (Exception e) {
+				TestsuiteLogger.error(e, "Unable to update version cache for " + serverType.name());
+			}
 		}
 
-		System.out.println("Version Cache successfully updated!");
+		TestsuiteLogger.info("Version cache successfully updated!");
 
 		this.needsUpdate = false;
 		this.updateTime = System.currentTimeMillis() + UPDATE_COOLDOWN;
@@ -82,7 +88,7 @@ public class ServerVersionCache implements Runnable {
 				this.cache.put(serverType, versions);
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
+			TestsuiteLogger.error(e, "Unable to load version cache file!");
 			this.needsUpdate = true;
 		}
 	}
@@ -109,7 +115,7 @@ public class ServerVersionCache implements Runnable {
 				GSON.toJson(root, bufferedWriter);
 			}
 		} catch (IOException e) {
-			e.printStackTrace();
+			TestsuiteLogger.error(e, "Unable to save version cache file!");
 		}
 	}
 
