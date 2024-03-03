@@ -1,13 +1,16 @@
 package dev.imprex.testsuite.command;
 
+import static dev.imprex.testsuite.command.ArgumentBuilder.literal;
 import static dev.imprex.testsuite.command.CommandBuilder.command;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.tree.LiteralCommandNode;
 
 import dev.imprex.testsuite.TestsuitePlugin;
 import dev.imprex.testsuite.api.TestsuiteSender;
@@ -28,7 +31,10 @@ import dev.imprex.testsuite.command.command.CommandStop;
 public class CommandRegistry {
 
 	private final Map<String, CommandMeta> commands = new HashMap<>();
-	private final CommandDispatcher<TestsuiteSender> dispatcher = new CommandDispatcher<>();
+
+	private final CommandDispatcher<TestsuiteSender> parentDispatcher = new CommandDispatcher<>();
+
+	private final LiteralArgumentBuilder<TestsuiteSender> literal = literal("testsuite");
 
 	public CommandRegistry(TestsuitePlugin plugin) {
 		this.register(command(new CommandConnect(plugin).create())
@@ -51,6 +57,12 @@ public class CommandRegistry {
 				.asRoot());
 		this.register(command(new CommandStop(plugin).create())
 				.asRoot());
+
+		LiteralCommandNode<TestsuiteSender> node = this.parentDispatcher.register(literal);
+		for (String alias : Arrays.asList("ts", "tsuite")) {
+			this.parentDispatcher.register(literal(alias)
+					.redirect(node));
+		}
 	}
 
 	public void register(CommandBuilder builder) {
@@ -58,11 +70,17 @@ public class CommandRegistry {
 		if (this.commands.containsKey(command)) {
 			throw new IllegalArgumentException("Duplicate command: " + command);
 		}
-		
+
 		CommandMeta registration = builder.build();
 		LiteralArgumentBuilder<TestsuiteSender> literal = registration.literal();
 		this.commands.put(command, registration);
-		this.dispatcher.register(literal);
+
+		if (builder.isRoot) {
+			this.parentDispatcher.register(literal);
+		}
+
+		LiteralCommandNode<TestsuiteSender> node = literal.build();
+		this.literal.then(node);
 
 		for (String alias : builder.aliases) {
 			if (this.commands.containsKey(alias)) {
@@ -71,10 +89,10 @@ public class CommandRegistry {
 
 			this.commands.put(alias, registration);
 
-			// Handling in implementation
-//			this.dispatcher.register(literal(alias)
-//					.requires(literal.getRequirement())
-//					.redirect(literal.build()));
+			if (builder.isRoot) {
+				this.parentDispatcher.register(literal(alias)
+					.redirect(node));
+			}
 		}
 	}
 
@@ -83,6 +101,6 @@ public class CommandRegistry {
 	}
 
 	public CommandDispatcher<TestsuiteSender> getDispatcher() {
-		return this.dispatcher;
+		return this.parentDispatcher;
 	}
 }

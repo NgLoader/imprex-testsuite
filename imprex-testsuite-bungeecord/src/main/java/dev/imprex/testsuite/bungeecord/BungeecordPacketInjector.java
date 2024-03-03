@@ -1,6 +1,8 @@
 package dev.imprex.testsuite.bungeecord;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.List;
 
 import com.mojang.brigadier.CommandDispatcher;
@@ -20,26 +22,32 @@ import net.md_5.bungee.protocol.packet.TabCompleteResponse;
 public class BungeecordPacketInjector extends MessageToMessageDecoder<PacketWrapper> {
 	
 	private static Field ProxiedPlayerChannelField;
-	private static Field ChannelWrapperChannelField;
+	private static Method ChannelWrapperChannelMethod;
 	
 	static {
 		try {
 			ProxiedPlayerChannelField = Class.forName("net.md_5.bungee.UserConnection").getDeclaredField("ch");
-			ChannelWrapperChannelField = Class.forName("net.md_5.bungee.netty.ChannelWrapper").getDeclaredField("ch");
-		} catch (NoSuchFieldException | SecurityException | ClassNotFoundException e) {
+			ProxiedPlayerChannelField.setAccessible(true);
+			
+			ChannelWrapperChannelMethod = Class.forName("net.md_5.bungee.netty.ChannelWrapper").getDeclaredMethod("getHandle");
+			ChannelWrapperChannelMethod.setAccessible(true);
+		} catch (NoSuchFieldException | SecurityException | ClassNotFoundException | NoSuchMethodException e) {
 			e.printStackTrace();
 		}
 	}
 
+	private final BungeecordPlugin plugin;
+	private final BungeecordPlayer player;
+
 	private final CommandDispatcher<TestsuiteSender> dispatcher;
 	private final List<String> commandPrefixList;
-
-	private final BungeecordPlayer player;
 	
 	public BungeecordPacketInjector(BungeecordPlugin plugin, BungeecordPlayer player) {
+		this.plugin = plugin;
+		this.player = player;
+
 		this.dispatcher = plugin.getTestsuite().getCommandRegistry().getDispatcher();
 		this.commandPrefixList = plugin.getCommandPrefixList();
-		this.player = player;
 	}
 
 	@Override
@@ -52,7 +60,12 @@ public class BungeecordPacketInjector extends MessageToMessageDecoder<PacketWrap
 		
 		if (packet instanceof TabCompleteRequest tabCompletePacket) {
 			StringReader cursor = new StringReader(tabCompletePacket.getCursor());
-			if (cursor.canRead() && cursor.peek() == '/') {
+			if (!cursor.canRead()) {
+				out.add(msg);
+				return;
+			}
+
+			if (cursor.peek() == '/') {
 				cursor.skip();
 			}
 
@@ -61,6 +74,11 @@ public class BungeecordPacketInjector extends MessageToMessageDecoder<PacketWrap
 				return;
 			}
 
+			cursor.setCursor(1);
+
+//			System.out.println(tabCompletePacket.getCursor());
+//			System.out.println(cursor.getRemaining());
+
 			ParseResults<TestsuiteSender> result = this.dispatcher.parse(cursor, this.player);
 			this.dispatcher.getCompletionSuggestions(result).whenComplete((suggestions, error) -> {
 				if (error != null) {
@@ -68,6 +86,7 @@ public class BungeecordPacketInjector extends MessageToMessageDecoder<PacketWrap
 					return;
 				}
 
+//				System.out.println("Suggestions: " + suggestions.getList().size());
 				ProxiedPlayer proxiedPlayer = this.player.getProxiedPlayer();
 				if (proxiedPlayer.isConnected() && !suggestions.isEmpty()) {
 					proxiedPlayer.unsafe().sendPacket(new TabCompleteResponse(tabCompletePacket.getTransactionId(), suggestions));
@@ -80,10 +99,10 @@ public class BungeecordPacketInjector extends MessageToMessageDecoder<PacketWrap
 	
 	public void inject() {
 		try {
-			Object channelWrapper = ProxiedPlayerChannelField.get(this.player);
-			Channel channel = (Channel) ChannelWrapperChannelField.get(channelWrapper);
+			Object channelWrapper = ProxiedPlayerChannelField.get(this.player.getProxiedPlayer());
+			Channel channel = (Channel) ChannelWrapperChannelMethod.invoke(channelWrapper);
 			channel.pipeline().addAfter("packet-decoder", "imprex-testsuite-decoder", this);
-		} catch (IllegalArgumentException | IllegalAccessException e) {
+		} catch (IllegalArgumentException | IllegalAccessException | InvocationTargetException e) {
 			e.printStackTrace();
 		}
 	}

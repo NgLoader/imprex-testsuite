@@ -53,10 +53,12 @@
 							<pattern>okio</pattern>
 							<shadedPattern>dev.imprex.shaded.okio</shadedPattern>
 						</relocation>
+						<!-- bungeecord packet injection is unable to find method when relocating
 						<relocation>
 							<pattern>com.mojang</pattern>
 							<shadedPattern>dev.imprex.shaded.com.mojang</shadedPattern>
 						</relocation>
+						-->
 						<relocation>
 							<pattern>com.google.gson</pattern>
 							<shadedPattern>dev.imprex.shaded.com.google.gson</shadedPattern>

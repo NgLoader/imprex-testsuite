@@ -82,7 +82,6 @@ public class ServerManager implements Runnable {
 
 					if (instance == null) {
 						instance = new ServerInstance(this, server);
-						instance.setIdleTimeout(false); // only enable when started with command
 
 						this.serverInstances.put(identifier, instance);
 

@@ -46,6 +46,8 @@ public class ServerSuggestionBuilder extends SuggestionBuilder<ServerInstance, S
 			String input = ArgumentBuilder.getSafeStringArgument(context, fieldName, "");
 			String[] keywords = input.toLowerCase().split("[-_. ]");
 
+			System.out.println("INPUT: " + context.getInput());
+			System.out.println("INPUT: " + input);
 			transformation.apply(this.supplier.get())
 				.map(Objects::toString)
 				.filter(name -> {
