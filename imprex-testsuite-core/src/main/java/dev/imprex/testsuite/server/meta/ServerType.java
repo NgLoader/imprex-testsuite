@@ -13,7 +13,8 @@ public enum ServerType {
 	SPIGOT("spigot", "https://hub.spigotmc.org/versions/"),
 	PAPER("paper", "https://api.papermc.io/v2/projects/paper"),
 	FOLIA("folia", "https://api.papermc.io/v2/projects/folia"),
-	MOHIST("mohist", "https://mohistmc.com/api/v2/projects/mohist");
+	MOHIST("mohist", "https://mohistmc.com/api/v2/projects/mohist"),
+	NANOLIMBO("nano limbo", null);
 
 	private static final Map<String, ServerType> TYPE_BY_NAME = Stream.of(ServerType.values()).collect(Collectors.toUnmodifiableMap(Enum::name, Function.identity()));
 
